@@ -49,6 +49,8 @@ const SideQuest = () => {
 
   const clustererRef = useRef<any>(null);
 
+  const clusterInfoWindowRef = useRef<any>(null);
+
   const rebuildMarkers = useCallback((questList: Quest[]) => {
     const map = mapInstanceRef.current;
     const google = (window as any).google;
@@ -61,6 +63,12 @@ const SideQuest = () => {
     if (clustererRef.current) {
       clustererRef.current.clearMarkers();
     }
+    if (clusterInfoWindowRef.current) {
+      clusterInfoWindowRef.current.close();
+    }
+
+    // Build a map from marker to quest for lookup
+    const markerQuestMap = new Map<any, Quest>();
 
     const markers = questList.map((quest) => {
       const marker = new google.maps.Marker({
@@ -73,14 +81,69 @@ const SideQuest = () => {
       });
 
       marker.addListener("click", () => infoWindow.open(map, marker));
+      markerQuestMap.set(marker, quest);
       return marker;
     });
 
     markersRef.current = markers;
-    clustererRef.current = new MarkerClusterer({
+
+    const clusterer = new MarkerClusterer({
       markers,
       map,
     });
+
+    // Add hover listener on cluster icons
+    google.maps.event.addListener(clusterer, "clusteringend", () => {
+      const clusters = clusterer.clusters;
+      clusters.forEach((cluster: any) => {
+        const clusterMarker = cluster.marker;
+        if (!clusterMarker) return;
+
+        google.maps.event.clearListeners(clusterMarker, "mouseover");
+        google.maps.event.clearListeners(clusterMarker, "mouseout");
+
+        google.maps.event.addListener(clusterMarker, "mouseover", () => {
+          if (clusterInfoWindowRef.current) {
+            clusterInfoWindowRef.current.close();
+          }
+
+          const clusterMarkers = cluster.markers || [];
+          const questItems = clusterMarkers
+            .map((m: any) => markerQuestMap.get(m))
+            .filter(Boolean) as Quest[];
+
+          const content = `<div style="color:#000; max-height:200px; overflow-y:auto; min-width:180px;">
+            <strong style="font-size:14px; display:block; margin-bottom:6px;">${questItems.length} Quests</strong>
+            ${questItems.map((q) => `
+              <div style="padding:4px 0; border-bottom:1px solid #eee;">
+                <strong>${q.title}</strong>
+                <div style="font-size:12px; color:#666;">${q.category} · ${q.quest_date}</div>
+                <div style="font-size:12px; color:#666;">${q.start_time} – ${q.end_time}</div>
+                <div style="font-size:11px; color:#999;">by ${q.creator_name || "Unknown"}</div>
+              </div>
+            `).join("")}
+          </div>`;
+
+          const iw = new google.maps.InfoWindow({
+            content,
+            position: clusterMarker.getPosition(),
+          });
+          iw.open(map);
+          clusterInfoWindowRef.current = iw;
+        });
+
+        google.maps.event.addListener(clusterMarker, "mouseout", () => {
+          setTimeout(() => {
+            if (clusterInfoWindowRef.current) {
+              clusterInfoWindowRef.current.close();
+              clusterInfoWindowRef.current = null;
+            }
+          }, 2000);
+        });
+      });
+    });
+
+    clustererRef.current = clusterer;
   }, []);
 
   const loadQuests = useCallback(async () => {

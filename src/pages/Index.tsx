@@ -45,7 +45,7 @@ const Index = () => {
       <div className="flex flex-1 flex-col items-center justify-center px-4">
         <div className="animate-fade-in">
           <div className="flex gap-8">
-            <button className="flex flex-col items-center gap-4 p-8 border-2 border-border rounded-xl hover:border-primary transition-colors w-52">
+            <button onClick={() => navigate("/sidequest")} className="flex flex-col items-center gap-4 p-8 border-2 border-border rounded-xl hover:border-primary transition-colors w-52">
               <div className="w-28 h-28 border-2 border-foreground rounded-md flex items-center justify-center">
                 <User className="h-14 w-14 text-primary" />
               </div>

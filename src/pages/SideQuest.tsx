@@ -13,7 +13,35 @@ const SideQuest = () => {
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
 
-// ... keep existing code (useEffect loadMap)
+  useEffect(() => {
+    const loadMap = async () => {
+      try {
+        const { data, error: fnError } = await supabase.functions.invoke("get-maps-key");
+        if (fnError || !data?.apiKey) {
+          setError("Failed to load map API key.");
+          return;
+        }
+
+        const script = document.createElement("script");
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${data.apiKey}`;
+        script.async = true;
+        script.onload = () => {
+          if (mapRef.current && (window as any).google) {
+            new (window as any).google.maps.Map(mapRef.current, {
+              center: { lat: 1.3521, lng: 103.8198 },
+              zoom: 12,
+            });
+          }
+        };
+        script.onerror = () => setError("Failed to load Google Maps.");
+        document.head.appendChild(script);
+      } catch {
+        setError("Something went wrong loading the map.");
+      }
+    };
+
+    loadMap();
+  }, []);
 
   return (
     <div className="relative flex min-h-screen flex-col bg-background">

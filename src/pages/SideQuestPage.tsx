@@ -30,7 +30,7 @@ const SideQuestPage = () => {
           referrerPolicy="no-referrer-when-downgrade"
         />
         <Button
-          className="absolute bottom-6 right-6 z-10 gap-2 shadow-lg"
+          className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 gap-2 shadow-lg"
           size="default"
         >
           <Plus className="h-4 w-4" />

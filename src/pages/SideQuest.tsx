@@ -1,43 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, List, Plus } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft, List, Plus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const SideQuest = () => {
   const navigate = useNavigate();
   const mapRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
 
-  useEffect(() => {
-    const loadMap = async () => {
-      try {
-        const { data, error: fnError } = await supabase.functions.invoke("get-maps-key");
-        if (fnError || !data?.apiKey) {
-          setError("Failed to load map API key.");
-          return;
-        }
-
-        const script = document.createElement("script");
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${data.apiKey}`;
-        script.async = true;
-        script.onload = () => {
-          if (mapRef.current && (window as any).google) {
-            new (window as any).google.maps.Map(mapRef.current, {
-              center: { lat: 1.3521, lng: 103.8198 },
-              zoom: 12,
-            });
-          }
-        };
-        script.onerror = () => setError("Failed to load Google Maps.");
-        document.head.appendChild(script);
-      } catch {
-        setError("Something went wrong loading the map.");
-      }
-    };
-
-    loadMap();
-  }, []);
+// ... keep existing code (useEffect loadMap)
 
   return (
     <div className="relative flex min-h-screen flex-col bg-background">
@@ -61,12 +37,59 @@ const SideQuest = () => {
         )}
       </div>
 
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
-        <Button onClick={() => {}} className="rounded-full px-6 gap-2">
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10">
+        <Button onClick={() => setShowCreate(true)} className="rounded-full px-6 gap-2">
           <Plus className="h-5 w-5" />
           Create Quest
         </Button>
       </div>
+
+      {/* Create Quest Modal */}
+      {showCreate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="w-full max-w-md rounded-xl border-2 border-border bg-background p-6 shadow-lg">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="font-display text-xl font-semibold text-foreground">Create New Side Quest!</h2>
+              <Button variant="ghost" size="icon" onClick={() => setShowCreate(false)}>
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+
+            <div className="space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">Title:</label>
+                <Input placeholder="Enter quest title" />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">Category:</label>
+                <Select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent className="z-[60] bg-popover">
+                    <SelectItem value="adventure">Adventure</SelectItem>
+                    <SelectItem value="food">Food</SelectItem>
+                    <SelectItem value="culture">Culture</SelectItem>
+                    <SelectItem value="nature">Nature</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">Time:</label>
+                <Input type="time" />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">Details:</label>
+                <Textarea placeholder="Describe your quest..." rows={4} />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

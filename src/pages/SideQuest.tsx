@@ -68,24 +68,34 @@ const SideQuest = () => {
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                   <SelectContent className="z-[60] bg-popover">
-                    <SelectItem value="adventure">Adventure</SelectItem>
                     <SelectItem value="food">Food</SelectItem>
-                    <SelectItem value="culture">Culture</SelectItem>
-                    <SelectItem value="nature">Nature</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="study">Study</SelectItem>
+                    <SelectItem value="fitness">Fitness</SelectItem>
+                    <SelectItem value="errands">Errands</SelectItem>
+                    <SelectItem value="others">Others</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-foreground">Time:</label>
-                <Input type="time" />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-foreground">Start Time:</label>
+                  <Input type="time" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-foreground">End Time:</label>
+                  <Input type="time" />
+                </div>
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-foreground">Details:</label>
                 <Textarea placeholder="Describe your quest..." rows={4} />
               </div>
+
+              <Button className="w-full" onClick={() => setShowCreate(false)}>
+                Create
+              </Button>
             </div>
           </div>
         </div>

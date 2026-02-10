@@ -16,6 +16,7 @@ const QuestBook = () => {
 
       <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4">
         <button
+          onClick={() => navigate("/questbook/motivation")}
           className="flex w-72 items-center gap-4 rounded-xl border-2 border-border p-6 transition-colors hover:border-primary"
         >
           <Sparkles className="h-10 w-10 text-primary" />

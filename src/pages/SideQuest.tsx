@@ -47,23 +47,40 @@ const SideQuest = () => {
   const [details, setDetails] = useState("");
   const [location, setLocation] = useState("");
 
-  const addMarker = useCallback((quest: Quest) => {
+  const clustererRef = useRef<any>(null);
+
+  const rebuildMarkers = useCallback((questList: Quest[]) => {
     const map = mapInstanceRef.current;
     const google = (window as any).google;
-    if (!map || !google) return;
+    const MarkerClusterer = (window as any).markerClusterer?.MarkerClusterer;
+    if (!map || !google || !MarkerClusterer) return;
 
-    const marker = new google.maps.Marker({
-      position: { lat: quest.lat, lng: quest.lng },
+    // Clear old
+    markersRef.current.forEach((m) => m.setMap(null));
+    markersRef.current = [];
+    if (clustererRef.current) {
+      clustererRef.current.clearMarkers();
+    }
+
+    const markers = questList.map((quest) => {
+      const marker = new google.maps.Marker({
+        position: { lat: quest.lat, lng: quest.lng },
+        title: quest.title,
+      });
+
+      const infoWindow = new google.maps.InfoWindow({
+        content: `<div style="color:#000;"><strong>${quest.title}</strong><br/><span>${quest.category}</span><br/><span>${quest.quest_date}</span><br/><span>${quest.start_time} - ${quest.end_time}</span><br/><small>by ${quest.creator_name || "Unknown"}</small></div>`,
+      });
+
+      marker.addListener("click", () => infoWindow.open(map, marker));
+      return marker;
+    });
+
+    markersRef.current = markers;
+    clustererRef.current = new MarkerClusterer({
+      markers,
       map,
-      title: quest.title,
     });
-
-    const infoWindow = new google.maps.InfoWindow({
-      content: `<div style="color:#000;"><strong>${quest.title}</strong><br/><span>${quest.category}</span><br/><span>${quest.quest_date}</span><br/><span>${quest.start_time} - ${quest.end_time}</span><br/><small>by ${quest.creator_name || "Unknown"}</small></div>`,
-    });
-
-    marker.addListener("click", () => infoWindow.open(map, marker));
-    markersRef.current.push(marker);
   }, []);
 
   const loadQuests = useCallback(async () => {
@@ -93,13 +110,20 @@ const SideQuest = () => {
     }));
 
     setQuests(enriched);
-
-    markersRef.current.forEach((m) => m.setMap(null));
-    markersRef.current = [];
-    enriched.forEach((q) => addMarker(q));
-  }, [addMarker]);
+    rebuildMarkers(enriched);
+  }, [rebuildMarkers]);
 
   useEffect(() => {
+    const loadScript = (src: string): Promise<void> =>
+      new Promise((resolve, reject) => {
+        const s = document.createElement("script");
+        s.src = src;
+        s.async = true;
+        s.onload = () => resolve();
+        s.onerror = () => reject();
+        document.head.appendChild(s);
+      });
+
     const loadMap = async () => {
       try {
         const { data, error: fnError } = await supabase.functions.invoke("get-maps-key");
@@ -108,17 +132,15 @@ const SideQuest = () => {
           return;
         }
 
-        if ((window as any).google?.maps) {
-          initMap();
-          return;
+        if (!(window as any).google?.maps) {
+          await loadScript(`https://maps.googleapis.com/maps/api/js?key=${data.apiKey}&libraries=places`);
         }
 
-        const script = document.createElement("script");
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${data.apiKey}&libraries=places`;
-        script.async = true;
-        script.onload = () => initMap();
-        script.onerror = () => setError("Failed to load Google Maps.");
-        document.head.appendChild(script);
+        if (!(window as any).markerClusterer) {
+          await loadScript("https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js");
+        }
+
+        initMap();
       } catch {
         setError("Something went wrong loading the map.");
       }

@@ -292,8 +292,9 @@ const SideQuest = () => {
           </Button>
           <h1 className="ml-2 font-display text-xl font-semibold text-foreground">SideQuest</h1>
         </div>
-        <Button variant="outline" size="icon" onClick={() => setShowList(true)}>
+        <Button variant="outline" onClick={() => setShowList(true)} className="gap-2">
           <List className="h-5 w-5" />
+          My Quests
         </Button>
       </header>
 

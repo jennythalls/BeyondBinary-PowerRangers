@@ -1,42 +1,66 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import NTULogo from "@/components/NTULogo";
-import { LogOut, User, Heart } from "lucide-react";
+import { LogOut, User, Heart, UserCircle } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Index = () => {
   const { user, signOut } = useAuth();
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
-      <div className="animate-fade-in text-center">
-        <NTULogo className="mb-8" />
-        <h1 className="text-3xl font-display font-bold text-foreground mb-2">
-          Welcome back
-        </h1>
-        <p className="text-muted-foreground mb-8">
-          {user?.email}
-        </p>
-
-        <div className="flex gap-6 mb-8">
-          <button className="flex flex-col items-center gap-3 p-6 border-2 border-border rounded-lg hover:border-primary transition-colors w-40">
-            <div className="w-20 h-20 border-2 border-foreground rounded-md flex items-center justify-center">
-              <User className="h-10 w-10 text-primary" />
+    <div className="flex min-h-screen flex-col bg-background">
+      {/* Top bar */}
+      <header className="flex items-center justify-between px-6 py-4">
+        <div />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="rounded-full">
+              <UserCircle className="h-6 w-6" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>Account</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <div className="px-2 py-1.5 text-sm text-muted-foreground">
+              {user?.email}
             </div>
-            <span className="font-display font-semibold text-foreground">SideQuest</span>
-          </button>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={signOut} className="text-destructive cursor-pointer">
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign Out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </header>
 
-          <button className="flex flex-col items-center gap-3 p-6 border-2 border-border rounded-lg hover:border-primary transition-colors w-40">
-            <div className="w-20 h-20 border-2 border-foreground rounded-md flex items-center justify-center">
-              <Heart className="h-10 w-10 text-primary fill-primary/30" />
-            </div>
-            <span className="font-display font-semibold text-foreground">QuestBook</span>
-          </button>
+      {/* Main content */}
+      <div className="flex flex-1 flex-col items-center justify-center px-4">
+        <div className="animate-fade-in text-center">
+          <NTULogo className="mb-8" />
+
+          <div className="flex gap-6">
+            <button className="flex flex-col items-center gap-3 p-6 border-2 border-border rounded-lg hover:border-primary transition-colors w-40">
+              <div className="w-20 h-20 border-2 border-foreground rounded-md flex items-center justify-center">
+                <User className="h-10 w-10 text-primary" />
+              </div>
+              <span className="font-display font-semibold text-foreground">SideQuest</span>
+            </button>
+
+            <button className="flex flex-col items-center gap-3 p-6 border-2 border-border rounded-lg hover:border-primary transition-colors w-40">
+              <div className="w-20 h-20 border-2 border-foreground rounded-md flex items-center justify-center">
+                <Heart className="h-10 w-10 text-primary fill-primary/30" />
+              </div>
+              <span className="font-display font-semibold text-foreground">QuestBook</span>
+            </button>
+          </div>
         </div>
-
-        <Button variant="outline" onClick={signOut} className="gap-2">
-          <LogOut className="h-4 w-4" />
-          Sign Out
-        </Button>
       </div>
     </div>
   );

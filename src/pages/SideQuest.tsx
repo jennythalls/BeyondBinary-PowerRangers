@@ -4,24 +4,35 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, List, Plus, X, MapPin } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ArrowLeft, List, Plus, X, MapPin, CalendarIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface Quest {
+  id: string;
   title: string;
   category: string;
-  startTime: string;
-  endTime: string;
-  details: string;
+  quest_date: string;
+  start_time: string;
+  end_time: string;
+  details: string | null;
   location: string;
   lat: number;
   lng: number;
+  user_id: string;
+  creator_name?: string;
 }
 
 const SideQuest = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
+  const markersRef = useRef<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [quests, setQuests] = useState<Quest[]>([]);
@@ -29,10 +40,67 @@ const SideQuest = () => {
   // Form state
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
+  const [questDate, setQuestDate] = useState<Date>();
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [details, setDetails] = useState("");
   const [location, setLocation] = useState("");
+
+  const addMarker = useCallback((quest: Quest) => {
+    const map = mapInstanceRef.current;
+    const google = (window as any).google;
+    if (!map || !google) return;
+
+    const marker = new google.maps.Marker({
+      position: { lat: quest.lat, lng: quest.lng },
+      map,
+      title: quest.title,
+    });
+
+    const infoWindow = new google.maps.InfoWindow({
+      content: `<div style="color:#000;"><strong>${quest.title}</strong><br/><span>${quest.category}</span><br/><span>${quest.quest_date}</span><br/><span>${quest.start_time} - ${quest.end_time}</span><br/><small>by ${quest.creator_name || "Unknown"}</small></div>`,
+    });
+
+    marker.addListener("click", () => infoWindow.open(map, marker));
+    markersRef.current.push(marker);
+  }, []);
+
+  const loadQuests = useCallback(async () => {
+    const now = new Date();
+    const { data, error: fetchError } = await supabase
+      .from("quests")
+      .select("*");
+
+    if (fetchError || !data) return;
+
+    // Filter: keep quests whose end time hasn't passed yet
+    const activeQuests = data.filter((q: any) => {
+      const endDateTime = new Date(`${q.quest_date}T${q.end_time}`);
+      return endDateTime > now;
+    });
+
+    // Fetch creator names
+    const userIds = [...new Set(activeQuests.map((q: any) => q.user_id))];
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("user_id, display_name")
+      .in("user_id", userIds);
+
+    const nameMap = new Map(profiles?.map((p) => [p.user_id, p.display_name]) || []);
+
+    const enriched: Quest[] = activeQuests.map((q: any) => ({
+      ...q,
+      creator_name: nameMap.get(q.user_id) || "Unknown",
+    }));
+
+    setQuests(enriched);
+
+    // Clear old markers
+    markersRef.current.forEach((m) => m.setMap(null));
+    markersRef.current = [];
+
+    enriched.forEach((q) => addMarker(q));
+  }, [addMarker]);
 
   useEffect(() => {
     const loadMap = async () => {
@@ -65,56 +133,47 @@ const SideQuest = () => {
           center: { lat: 1.3521, lng: 103.8198 },
           zoom: 12,
         });
+        loadQuests();
       }
     };
 
     loadMap();
-  }, []);
+  }, [loadQuests]);
 
-  const addMarker = useCallback((quest: Quest) => {
-    const map = mapInstanceRef.current;
-    const google = (window as any).google;
-    if (!map || !google) return;
-
-    const marker = new google.maps.Marker({
-      position: { lat: quest.lat, lng: quest.lng },
-      map,
-      title: quest.title,
-    });
-
-    const infoWindow = new google.maps.InfoWindow({
-      content: `<div style="color:#000;"><strong>${quest.title}</strong><br/><span>${quest.category}</span><br/><span>${quest.startTime} - ${quest.endTime}</span></div>`,
-    });
-
-    marker.addListener("click", () => infoWindow.open(map, marker));
-    map.panTo({ lat: quest.lat, lng: quest.lng });
-    map.setZoom(15);
-  }, []);
-
-  const handleCreate = () => {
-    if (!title || !location) return;
+  const handleCreate = async () => {
+    if (!title || !location || !questDate || !startTime || !endTime || !user) return;
 
     const google = (window as any).google;
     if (!google) return;
 
     const geocoder = new google.maps.Geocoder();
-    geocoder.geocode({ address: location }, (results: any, status: string) => {
+    geocoder.geocode({ address: location }, async (results: any, status: string) => {
       if (status === "OK" && results[0]) {
         const { lat, lng } = results[0].geometry.location;
-        const newQuest: Quest = {
+
+        const { error: insertError } = await supabase.from("quests").insert({
+          user_id: user.id,
           title,
           category,
-          startTime,
-          endTime,
-          details,
+          quest_date: format(questDate, "yyyy-MM-dd"),
+          start_time: startTime,
+          end_time: endTime,
+          details: details || null,
           location,
           lat: lat(),
           lng: lng(),
-        };
-        setQuests((prev) => [...prev, newQuest]);
-        addMarker(newQuest);
-        resetForm();
-        setShowCreate(false);
+        });
+
+        if (!insertError) {
+          resetForm();
+          setShowCreate(false);
+          await loadQuests();
+          const map = mapInstanceRef.current;
+          if (map) {
+            map.panTo({ lat: lat(), lng: lng() });
+            map.setZoom(15);
+          }
+        }
       }
     });
   };
@@ -122,6 +181,7 @@ const SideQuest = () => {
   const resetForm = () => {
     setTitle("");
     setCategory("");
+    setQuestDate(undefined);
     setStartTime("");
     setEndTime("");
     setDetails("");
@@ -157,10 +217,9 @@ const SideQuest = () => {
         </Button>
       </div>
 
-      {/* Create Quest Modal */}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-          <div className="w-full max-w-md rounded-xl border-2 border-border bg-background p-6 shadow-lg">
+          <div className="w-full max-w-md rounded-xl border-2 border-border bg-background p-6 shadow-lg max-h-[90vh] overflow-y-auto">
             <div className="mb-6 flex items-center justify-between">
               <h2 className="font-display text-xl font-semibold text-foreground">Create New Side Quest!</h2>
               <Button variant="ghost" size="icon" onClick={() => setShowCreate(false)}>
@@ -201,6 +260,31 @@ const SideQuest = () => {
                     className="pl-9"
                   />
                 </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">Date:</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn("w-full justify-start text-left font-normal", !questDate && "text-muted-foreground")}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {questDate ? format(questDate, "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 z-[60]" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={questDate}
+                      onSelect={setQuestDate}
+                      disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

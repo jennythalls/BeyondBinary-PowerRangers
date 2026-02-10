@@ -47,6 +47,51 @@ export type Database = {
         }
         Relationships: []
       }
+      quests: {
+        Row: {
+          category: string
+          created_at: string
+          details: string | null
+          end_time: string
+          id: string
+          lat: number
+          lng: number
+          location: string
+          quest_date: string
+          start_time: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          details?: string | null
+          end_time: string
+          id?: string
+          lat: number
+          lng: number
+          location: string
+          quest_date: string
+          start_time: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          details?: string | null
+          end_time?: string
+          id?: string
+          lat?: number
+          lng?: number
+          location?: string
+          quest_date?: string
+          start_time?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

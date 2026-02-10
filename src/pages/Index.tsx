@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import NTULogo from "@/components/NTULogo";
 import { LogOut, User, Heart, UserCircle } from "lucide-react";
 import {
   DropdownMenu,
@@ -13,6 +13,7 @@ import {
 
 const Index = () => {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -44,7 +45,7 @@ const Index = () => {
       <div className="flex flex-1 flex-col items-center justify-center px-4">
         <div className="animate-fade-in">
           <div className="flex gap-8">
-            <button className="flex flex-col items-center gap-4 p-8 border-2 border-border rounded-xl hover:border-primary transition-colors w-52">
+            <button onClick={() => navigate("/sidequest")} className="flex flex-col items-center gap-4 p-8 border-2 border-border rounded-xl hover:border-primary transition-colors w-52">
               <div className="w-28 h-28 border-2 border-foreground rounded-md flex items-center justify-center">
                 <User className="h-14 w-14 text-primary" />
               </div>

@@ -19,6 +19,11 @@ const AuthPage = () => {
     setLoading(true);
 
     if (isSignUp) {
+      if (!email.endsWith("@e.ntu.edu.sg")) {
+        toast.error("Only @e.ntu.edu.sg email addresses are allowed.");
+        setLoading(false);
+        return;
+      }
       const { error } = await signUp(email, password, displayName);
       if (error) {
         toast.error(error.message);
@@ -72,7 +77,7 @@ const AuthPage = () => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              placeholder="you@e.ntu.edu.sg"
               required
             />
           </div>

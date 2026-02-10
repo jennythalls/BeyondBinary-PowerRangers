@@ -82,8 +82,18 @@ const QuestBook = () => {
         </Button>
       </div>
 
-      {/* Bottom half placeholder */}
-      <div className="flex-1" />
+      {/* Category buttons */}
+      <div className="flex flex-col items-center gap-4 px-6 py-8">
+        <Button variant="outline" className="w-full max-w-md h-14 text-lg font-semibold">
+          Motivation Quotes
+        </Button>
+        <Button variant="outline" className="w-full max-w-md h-14 text-lg font-semibold">
+          Reflections
+        </Button>
+        <Button variant="outline" className="w-full max-w-md h-14 text-lg font-semibold">
+          Self-Help Resources
+        </Button>
+      </div>
     </div>
   );
 };

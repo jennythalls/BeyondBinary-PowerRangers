@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ArrowLeft, List, Plus, X, MapPin, CalendarIcon } from "lucide-react";
+import { ArrowLeft, List, Plus, X, MapPin, CalendarIcon, Square } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
@@ -35,6 +35,7 @@ const SideQuest = () => {
   const markersRef = useRef<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [showList, setShowList] = useState(false);
   const [quests, setQuests] = useState<Quest[]>([]);
 
   // Form state
@@ -73,13 +74,11 @@ const SideQuest = () => {
 
     if (fetchError || !data) return;
 
-    // Filter: keep quests whose end time hasn't passed yet
     const activeQuests = data.filter((q: any) => {
       const endDateTime = new Date(`${q.quest_date}T${q.end_time}`);
       return endDateTime > now;
     });
 
-    // Fetch creator names
     const userIds = [...new Set(activeQuests.map((q: any) => q.user_id))];
     const { data: profiles } = await supabase
       .from("profiles")
@@ -95,10 +94,8 @@ const SideQuest = () => {
 
     setQuests(enriched);
 
-    // Clear old markers
     markersRef.current.forEach((m) => m.setMap(null));
     markersRef.current = [];
-
     enriched.forEach((q) => addMarker(q));
   }, [addMarker]);
 
@@ -178,6 +175,17 @@ const SideQuest = () => {
     });
   };
 
+  const handleEndQuest = async (questId: string) => {
+    const { error: deleteError } = await supabase
+      .from("quests")
+      .delete()
+      .eq("id", questId);
+
+    if (!deleteError) {
+      await loadQuests();
+    }
+  };
+
   const resetForm = () => {
     setTitle("");
     setCategory("");
@@ -188,6 +196,8 @@ const SideQuest = () => {
     setLocation("");
   };
 
+  const myQuests = quests.filter((q) => q.user_id === user?.id);
+
   return (
     <div className="relative flex min-h-screen flex-col bg-background">
       <header className="flex items-center justify-between px-6 py-4">
@@ -197,7 +207,7 @@ const SideQuest = () => {
           </Button>
           <h1 className="ml-2 font-display text-xl font-semibold text-foreground">SideQuest</h1>
         </div>
-        <Button variant="outline" size="icon" onClick={() => {}}>
+        <Button variant="outline" size="icon" onClick={() => setShowList(true)}>
           <List className="h-5 w-5" />
         </Button>
       </header>
@@ -217,6 +227,64 @@ const SideQuest = () => {
         </Button>
       </div>
 
+      {/* My Quests List */}
+      {showList && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="w-full max-w-md rounded-xl border-2 border-border bg-background p-6 shadow-lg max-h-[90vh] overflow-y-auto">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="font-display text-xl font-semibold text-foreground">My Quests</h2>
+              <Button variant="ghost" size="icon" onClick={() => setShowList(false)}>
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+
+            {myQuests.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">You haven't created any quests yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {myQuests.map((quest) => (
+                  <div
+                    key={quest.id}
+                    className="rounded-lg border border-border p-4 space-y-2"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-foreground truncate">{quest.title}</h3>
+                        <p className="text-xs text-muted-foreground capitalize">{quest.category}</p>
+                      </div>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="shrink-0 gap-1.5"
+                        onClick={() => handleEndQuest(quest.id)}
+                      >
+                        <Square className="h-3 w-3" />
+                        End
+                      </Button>
+                    </div>
+                    <div className="text-sm text-muted-foreground space-y-0.5">
+                      <p className="flex items-center gap-1.5">
+                        <MapPin className="h-3.5 w-3.5" />
+                        {quest.location}
+                      </p>
+                      <p className="flex items-center gap-1.5">
+                        <CalendarIcon className="h-3.5 w-3.5" />
+                        {quest.quest_date}
+                      </p>
+                      <p>{quest.start_time} – {quest.end_time}</p>
+                    </div>
+                    {quest.details && (
+                      <p className="text-sm text-muted-foreground border-t border-border pt-2">{quest.details}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Create Quest Modal */}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
           <div className="w-full max-w-md rounded-xl border-2 border-border bg-background p-6 shadow-lg max-h-[90vh] overflow-y-auto">

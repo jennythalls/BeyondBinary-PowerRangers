@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
+import SideQuest from "./pages/SideQuest";
 import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
 
@@ -33,6 +34,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+            <Route path="/sidequest" element={<ProtectedRoute><SideQuest /></ProtectedRoute>} />
             <Route path="/auth" element={<PublicRoute><AuthPage /></PublicRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -2,7 +2,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import NTULogo from "@/components/NTULogo";
 import { LogOut, User, Heart, UserCircle } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +13,6 @@ import {
 
 const Index = () => {
   const { user, signOut } = useAuth();
-  const navigate = useNavigate();
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -53,7 +51,7 @@ const Index = () => {
               <span className="font-display font-semibold text-lg text-foreground">SideQuest</span>
             </button>
 
-            <button onClick={() => navigate("/questbook")} className="flex flex-col items-center gap-4 p-8 border-2 border-border rounded-xl hover:border-primary transition-colors w-52">
+            <button className="flex flex-col items-center gap-4 p-8 border-2 border-border rounded-xl hover:border-primary transition-colors w-52">
               <div className="w-28 h-28 border-2 border-foreground rounded-md flex items-center justify-center">
                 <Heart className="h-14 w-14 text-primary fill-primary/30" />
               </div>

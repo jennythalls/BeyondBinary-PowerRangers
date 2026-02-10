@@ -6,7 +6,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
-import QuestBook from "./pages/QuestBook";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,7 +33,6 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-            <Route path="/questbook" element={<ProtectedRoute><QuestBook /></ProtectedRoute>} />
             <Route path="/auth" element={<PublicRoute><AuthPage /></PublicRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

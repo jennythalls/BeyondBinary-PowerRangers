@@ -42,22 +42,20 @@ const Index = () => {
 
       {/* Main content */}
       <div className="flex flex-1 flex-col items-center justify-center px-4">
-        <div className="animate-fade-in text-center">
-          <NTULogo className="mb-8" />
-
-          <div className="flex gap-6">
-            <button className="flex flex-col items-center gap-3 p-6 border-2 border-border rounded-lg hover:border-primary transition-colors w-40">
-              <div className="w-20 h-20 border-2 border-foreground rounded-md flex items-center justify-center">
-                <User className="h-10 w-10 text-primary" />
+        <div className="animate-fade-in">
+          <div className="flex gap-8">
+            <button className="flex flex-col items-center gap-4 p-8 border-2 border-border rounded-xl hover:border-primary transition-colors w-52">
+              <div className="w-28 h-28 border-2 border-foreground rounded-md flex items-center justify-center">
+                <User className="h-14 w-14 text-primary" />
               </div>
-              <span className="font-display font-semibold text-foreground">SideQuest</span>
+              <span className="font-display font-semibold text-lg text-foreground">SideQuest</span>
             </button>
 
-            <button className="flex flex-col items-center gap-3 p-6 border-2 border-border rounded-lg hover:border-primary transition-colors w-40">
-              <div className="w-20 h-20 border-2 border-foreground rounded-md flex items-center justify-center">
-                <Heart className="h-10 w-10 text-primary fill-primary/30" />
+            <button className="flex flex-col items-center gap-4 p-8 border-2 border-border rounded-xl hover:border-primary transition-colors w-52">
+              <div className="w-28 h-28 border-2 border-foreground rounded-md flex items-center justify-center">
+                <Heart className="h-14 w-14 text-primary fill-primary/30" />
               </div>
-              <span className="font-display font-semibold text-foreground">QuestBook</span>
+              <span className="font-display font-semibold text-lg text-foreground">QuestBook</span>
             </button>
           </div>
         </div>

@@ -24,6 +24,7 @@ const QuestBook = () => {
         </button>
 
         <button
+          onClick={() => navigate("/questbook/reflections")}
           className="flex w-72 items-center gap-4 rounded-xl border-2 border-border p-6 transition-colors hover:border-primary"
         >
           <BookOpen className="h-10 w-10 text-primary" />

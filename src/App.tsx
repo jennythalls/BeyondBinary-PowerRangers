@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
 import QuestBook from "./pages/QuestBook";
 import MotivationQuotes from "./pages/MotivationQuotes";
+import Reflections from "./pages/Reflections";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/questbook" element={<ProtectedRoute><QuestBook /></ProtectedRoute>} />
             <Route path="/questbook/motivation" element={<ProtectedRoute><MotivationQuotes /></ProtectedRoute>} />
+            <Route path="/questbook/reflections" element={<ProtectedRoute><Reflections /></ProtectedRoute>} />
             <Route path="/auth" element={<PublicRoute><AuthPage /></PublicRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

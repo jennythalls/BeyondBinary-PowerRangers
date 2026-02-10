@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, List, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const SideQuest = () => {
@@ -40,12 +40,17 @@ const SideQuest = () => {
   }, []);
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <header className="flex items-center px-6 py-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
-          <ArrowLeft className="h-5 w-5" />
+    <div className="relative flex min-h-screen flex-col bg-background">
+      <header className="flex items-center justify-between px-6 py-4">
+        <div className="flex items-center">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="ml-2 font-display text-xl font-semibold text-foreground">SideQuest</h1>
+        </div>
+        <Button variant="outline" size="icon" onClick={() => {}}>
+          <List className="h-5 w-5" />
         </Button>
-        <h1 className="ml-2 font-display text-xl font-semibold text-foreground">SideQuest</h1>
       </header>
 
       <div className="flex-1 px-4 pb-4">
@@ -54,6 +59,13 @@ const SideQuest = () => {
         ) : (
           <div ref={mapRef} className="h-full w-full rounded-xl border-2 border-border" style={{ minHeight: "calc(100vh - 80px)" }} />
         )}
+      </div>
+
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
+        <Button onClick={() => {}} className="rounded-full px-6 gap-2">
+          <Plus className="h-5 w-5" />
+          Create Quest
+        </Button>
       </div>
     </div>
   );

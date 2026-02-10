@@ -382,12 +382,12 @@ const SideQuest = () => {
 
             <div className="space-y-5">
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-foreground">Title:</label>
+                <label className="text-sm font-medium text-foreground">Title: <span className="text-destructive">*</span></label>
                 <Input placeholder="Enter quest title" value={title} onChange={(e) => setTitle(e.target.value)} />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-foreground">Category:</label>
+                <label className="text-sm font-medium text-foreground">Category: <span className="text-destructive">*</span></label>
                 <Select value={category} onValueChange={setCategory}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a category" />
@@ -403,7 +403,7 @@ const SideQuest = () => {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-foreground">Location:</label>
+                <label className="text-sm font-medium text-foreground">Location: <span className="text-destructive">*</span></label>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -416,7 +416,7 @@ const SideQuest = () => {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-foreground">Date:</label>
+                <label className="text-sm font-medium text-foreground">Date: <span className="text-destructive">*</span></label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -442,17 +442,17 @@ const SideQuest = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-foreground">Start Time:</label>
+                  <label className="text-sm font-medium text-foreground">Start Time: <span className="text-destructive">*</span></label>
                   <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-foreground">End Time:</label>
+                  <label className="text-sm font-medium text-foreground">End Time: <span className="text-destructive">*</span></label>
                   <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-foreground">Details:</label>
+                <label className="text-sm font-medium text-foreground">Details: <span className="text-xs text-muted-foreground">(optional)</span></label>
                 <Textarea placeholder="Describe your quest..." rows={4} value={details} onChange={(e) => setDetails(e.target.value)} />
               </div>
 

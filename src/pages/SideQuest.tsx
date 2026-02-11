@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ArrowLeft, List, Plus, X, MapPin, CalendarIcon, Square, Users, LogIn, LogOut, Send, MessageCircle, ChevronUp, ChevronDown, Filter } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -80,6 +81,36 @@ const SideQuest = () => {
   const clustererRef = useRef<any>(null);
   const clusterInfoWindowRef = useRef<any>(null);
   const loadQuestsRef = useRef<() => Promise<void>>();
+
+  // Unread message counts
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
+
+  const getLastReadKey = (questId: string) => `chat_last_read_${questId}`;
+
+  const fetchUnreadCounts = useCallback(async (questIds: string[]) => {
+    if (!questIds.length) return;
+    const counts: Record<string, number> = {};
+    await Promise.all(
+      questIds.map(async (qid) => {
+        const lastRead = localStorage.getItem(getLastReadKey(qid));
+        let query = supabase
+          .from("quest_messages" as any)
+          .select("id", { count: "exact", head: true })
+          .eq("quest_id", qid);
+        if (lastRead) {
+          query = query.gt("created_at", lastRead);
+        }
+        const { count } = await query;
+        counts[qid] = count || 0;
+      })
+    );
+    setUnreadCounts(counts);
+  }, []);
+
+  const markQuestAsRead = useCallback((questId: string) => {
+    localStorage.setItem(getLastReadKey(questId), new Date().toISOString());
+    setUnreadCounts((prev) => ({ ...prev, [questId]: 0 }));
+  }, []);
 
   const rebuildMarkers = useCallback((questList: Quest[], currentUserId?: string) => {
     const map = mapInstanceRef.current;
@@ -491,6 +522,7 @@ const SideQuest = () => {
     }
 
     loadChatMessages(chatQuestId);
+    markQuestAsRead(chatQuestId);
 
     // Subscribe to realtime
     const channel = supabase
@@ -525,7 +557,15 @@ const SideQuest = () => {
       supabase.removeChannel(channel);
       chatChannelRef.current = null;
     };
-  }, [chatQuestId, loadChatMessages]);
+  }, [chatQuestId, loadChatMessages, markQuestAsRead]);
+
+  // Fetch unread counts when My Quests panel opens
+  useEffect(() => {
+    if (!showList || !user) return;
+    const createdIds = quests.filter(q => q.user_id === user.id).map(q => q.id);
+    const joinedIds = quests.filter(q => q.user_id !== user.id && q.participants?.some(p => p.user_id === user.id)).map(q => q.id);
+    fetchUnreadCounts([...createdIds, ...joinedIds]);
+  }, [showList, user, quests, fetchUnreadCounts]);
 
   // Scroll chat to bottom when messages change
   useEffect(() => {
@@ -836,6 +876,7 @@ const SideQuest = () => {
       {showList && (() => {
         const createdQuests = quests.filter((q) => q.user_id === user?.id);
         const joinedQuests = quests.filter((q) => q.user_id !== user?.id && q.participants?.some(p => p.user_id === user?.id));
+        const allMyQuestIds = [...createdQuests, ...joinedQuests].map(q => q.id);
 
         const renderQuestCard = (quest: Quest, mode: 'created' | 'joined') => (
           <div
@@ -845,7 +886,14 @@ const SideQuest = () => {
           >
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <h3 className="font-semibold text-foreground truncate">{quest.title}</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-foreground truncate">{quest.title}</h3>
+                  {(unreadCounts[quest.id] || 0) > 0 && (
+                    <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5 shrink-0">
+                      {unreadCounts[quest.id]} new
+                    </Badge>
+                  )}
+                </div>
                 <p className="text-xs text-muted-foreground capitalize">{quest.category}</p>
               </div>
               {mode === 'created' ? (

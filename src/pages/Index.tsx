@@ -133,52 +133,66 @@ const Index = () => {
         </p>
       </div>
 
-      {/* Main content - Gate */}
+      {/* Main content */}
       <div className="relative z-10 flex-1 flex items-center justify-center px-4">
-        <div className="animate-fade-in flex" style={{ perspective: "1200px" }}>
-          {/* Left door - SideQuest */}
-          <button
-            onClick={() => handleGateClick("left", "/sidequest")}
-            className={`group flex flex-col items-center gap-4 p-10 rounded-l-2xl border-2 border-border border-r bg-card/80 backdrop-blur-sm w-56 origin-left transition-all duration-300 hover:bg-primary/5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10 ${
-              gateOpening ? "animate-gate-open-left" : ""
-            }`}
-            disabled={!!gateOpening}
+        <div className="animate-fade-in flex gap-0 items-stretch relative">
+          {/* Left - SideQuest */}
+          <div
+            className={`transition-all duration-500 ${
+              gateOpening === "right" ? "animate-fade-out-scale pointer-events-none" : ""
+            } ${gateOpening === "left" ? "!mx-auto" : ""}`}
+            style={gateOpening === "left" ? { position: "absolute", left: "50%", transform: "translateX(-50%)" } : undefined}
           >
-            <div className="w-24 h-24 rounded-2xl bg-primary/10 flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
-              <Users className="h-12 w-12 text-primary" />
-            </div>
-            <div className="text-center">
-              <span className="font-display font-bold text-lg text-foreground flex items-center gap-1.5 justify-center">
-                <Compass className="h-4 w-4 text-primary" />
-                SideQuest
-              </span>
-              <span className="mt-1.5 block text-xs text-muted-foreground leading-relaxed">
-                Create & discover quests<br />happening around you
-              </span>
-            </div>
-          </button>
+            <button
+              onClick={() => handleGateClick("left", "/sidequest")}
+              className={`group flex flex-col items-center gap-4 p-10 rounded-2xl border-2 border-border bg-card/80 backdrop-blur-sm w-56 transition-all duration-300 hover:bg-primary/5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10 ${
+                gateOpening === "left" ? "animate-vibrate border-primary/40 shadow-lg shadow-primary/10" : ""
+              } ${!gateOpening ? "rounded-r-none border-r" : ""}`}
+              disabled={!!gateOpening}
+            >
+              <div className="w-24 h-24 rounded-2xl bg-primary/10 flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
+                <Users className="h-12 w-12 text-primary" />
+              </div>
+              <div className="text-center">
+                <span className="font-display font-bold text-lg text-foreground flex items-center gap-1.5 justify-center">
+                  <Compass className="h-4 w-4 text-primary" />
+                  SideQuest
+                </span>
+                <span className="mt-1.5 block text-xs text-muted-foreground leading-relaxed">
+                  Create & discover quests<br />happening around you
+                </span>
+              </div>
+            </button>
+          </div>
 
-          {/* Right door - QuestBreak */}
-          <button
-            onClick={() => handleGateClick("right", "/questbook")}
-            className={`group flex flex-col items-center gap-4 p-10 rounded-r-2xl border-2 border-border border-l-0 bg-card/80 backdrop-blur-sm w-56 origin-right transition-all duration-300 hover:bg-accent/5 hover:border-accent/40 hover:shadow-lg hover:shadow-accent/10 ${
-              gateOpening ? "animate-gate-open-right" : ""
-            }`}
-            disabled={!!gateOpening}
+          {/* Right - QuestBreak */}
+          <div
+            className={`transition-all duration-500 ${
+              gateOpening === "left" ? "animate-fade-out-scale pointer-events-none" : ""
+            } ${gateOpening === "right" ? "!mx-auto" : ""}`}
+            style={gateOpening === "right" ? { position: "absolute", left: "50%", transform: "translateX(-50%)" } : undefined}
           >
-            <div className="w-24 h-24 rounded-2xl bg-accent/10 flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
-              <Heart className="h-12 w-12 text-accent fill-accent/20" />
-            </div>
-            <div className="text-center">
-              <span className="font-display font-bold text-lg text-foreground flex items-center gap-1.5 justify-center">
-                <Sunrise className="h-4 w-4 text-accent" />
-                QuestBreak
-              </span>
-              <span className="mt-1.5 block text-xs text-muted-foreground leading-relaxed">
-                Recharge with quotes,<br />reflections & support
-              </span>
-            </div>
-          </button>
+            <button
+              onClick={() => handleGateClick("right", "/questbook")}
+              className={`group flex flex-col items-center gap-4 p-10 rounded-2xl border-2 border-border bg-card/80 backdrop-blur-sm w-56 transition-all duration-300 hover:bg-accent/5 hover:border-accent/40 hover:shadow-lg hover:shadow-accent/10 ${
+                gateOpening === "right" ? "animate-vibrate border-accent/40 shadow-lg shadow-accent/10" : ""
+              } ${!gateOpening ? "rounded-l-none border-l-0" : ""}`}
+              disabled={!!gateOpening}
+            >
+              <div className="w-24 h-24 rounded-2xl bg-accent/10 flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
+                <Heart className="h-12 w-12 text-accent fill-accent/20" />
+              </div>
+              <div className="text-center">
+                <span className="font-display font-bold text-lg text-foreground flex items-center gap-1.5 justify-center">
+                  <Sunrise className="h-4 w-4 text-accent" />
+                  QuestBreak
+                </span>
+                <span className="mt-1.5 block text-xs text-muted-foreground leading-relaxed">
+                  Recharge with quotes,<br />reflections & support
+                </span>
+              </div>
+            </button>
+          </div>
         </div>
       </div>
 

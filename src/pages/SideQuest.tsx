@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ArrowLeft, List, Plus, X, MapPin, CalendarIcon, Square, Users, LogIn, LogOut } from "lucide-react";
+import { ArrowLeft, List, Plus, X, MapPin, CalendarIcon, Square, Users, LogIn, LogOut, Send, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
@@ -53,6 +53,21 @@ const SideQuest = () => {
   const [endTime, setEndTime] = useState("");
   const [details, setDetails] = useState("");
   const [location, setLocation] = useState("");
+
+  // Chat state
+  interface ChatMessage {
+    id: string;
+    quest_id: string;
+    user_id: string;
+    message: string;
+    created_at: string;
+    display_name?: string;
+  }
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [showChat, setShowChat] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const chatChannelRef = useRef<any>(null);
 
   const clustererRef = useRef<any>(null);
   const clusterInfoWindowRef = useRef<any>(null);
@@ -385,6 +400,97 @@ const SideQuest = () => {
     setLocation("");
   };
 
+  // Chat: load messages + subscribe to realtime when a quest is selected
+  const loadChatMessages = useCallback(async (questId: string) => {
+    const { data: messages } = await supabase
+      .from("quest_messages" as any)
+      .select("*")
+      .eq("quest_id", questId)
+      .order("created_at", { ascending: true });
+
+    if (!messages) return;
+
+    const msgUserIds = [...new Set((messages as any[]).map((m: any) => m.user_id))];
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("user_id, display_name")
+      .in("user_id", msgUserIds.length > 0 ? msgUserIds : ["__none__"]);
+
+    const nameMap = new Map(profiles?.map((p) => [p.user_id, p.display_name]) || []);
+
+    setChatMessages((messages as any[]).map((m: any) => ({
+      ...m,
+      display_name: nameMap.get(m.user_id) || "Unknown",
+    })));
+  }, []);
+
+  useEffect(() => {
+    if (!selectedQuest) {
+      setChatMessages([]);
+      setShowChat(false);
+      setChatInput("");
+      if (chatChannelRef.current) {
+        supabase.removeChannel(chatChannelRef.current);
+        chatChannelRef.current = null;
+      }
+      return;
+    }
+
+    loadChatMessages(selectedQuest.id);
+
+    // Subscribe to realtime
+    const channel = supabase
+      .channel(`quest-chat-${selectedQuest.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'quest_messages',
+          filter: `quest_id=eq.${selectedQuest.id}`,
+        },
+        async (payload: any) => {
+          const msg = payload.new;
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("display_name")
+            .eq("user_id", msg.user_id)
+            .single();
+
+          setChatMessages((prev) => [...prev, {
+            ...msg,
+            display_name: profile?.display_name || "Unknown",
+          }]);
+        }
+      )
+      .subscribe();
+
+    chatChannelRef.current = channel;
+
+    return () => {
+      supabase.removeChannel(channel);
+      chatChannelRef.current = null;
+    };
+  }, [selectedQuest?.id, loadChatMessages]);
+
+  // Scroll chat to bottom when messages change
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages]);
+
+  const handleSendMessage = async () => {
+    if (!chatInput.trim() || !user || !selectedQuest) return;
+    const msg = chatInput.trim();
+    setChatInput("");
+    await supabase.from("quest_messages" as any).insert({
+      quest_id: selectedQuest.id,
+      user_id: user.id,
+      message: msg,
+    } as any);
+  };
+
+  const isMember = (quest: Quest) => isCreator(quest) || isParticipant(quest);
+
   const myQuests = quests.filter((q) => q.user_id === user?.id);
   const isParticipant = (quest: Quest) => quest.participants?.some(p => p.user_id === user?.id) || false;
   const isCreator = (quest: Quest) => quest.user_id === user?.id;
@@ -477,6 +583,64 @@ const SideQuest = () => {
                   </Button>
                 )}
               </div>
+
+              {/* Group Chat */}
+              {isMember(selectedQuest) && (
+                <div className="border-t border-border pt-3">
+                  <button
+                    onClick={() => setShowChat(!showChat)}
+                    className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-colors w-full"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    Group Chat
+                    {chatMessages.length > 0 && (
+                      <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] text-primary-foreground">
+                        {chatMessages.length}
+                      </span>
+                    )}
+                  </button>
+
+                  {showChat && (
+                    <div className="mt-3 flex flex-col">
+                      <div className="h-48 overflow-y-auto rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+                        {chatMessages.length === 0 ? (
+                          <p className="text-xs text-muted-foreground text-center pt-16">No messages yet. Start the conversation!</p>
+                        ) : (
+                          chatMessages.map((msg) => (
+                            <div
+                              key={msg.id}
+                              className={cn(
+                                "max-w-[80%] rounded-lg px-3 py-1.5 text-xs",
+                                msg.user_id === user?.id
+                                  ? "ml-auto bg-primary text-primary-foreground"
+                                  : "bg-muted text-foreground"
+                              )}
+                            >
+                              {msg.user_id !== user?.id && (
+                                <p className="font-semibold text-[10px] opacity-70 mb-0.5">{msg.display_name}</p>
+                              )}
+                              <p>{msg.message}</p>
+                            </div>
+                          ))
+                        )}
+                        <div ref={chatEndRef} />
+                      </div>
+                      <div className="mt-2 flex gap-2">
+                        <Input
+                          placeholder="Type a message..."
+                          value={chatInput}
+                          onChange={(e) => setChatInput(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                          className="text-xs h-8"
+                        />
+                        <Button size="sm" className="h-8 px-3" onClick={handleSendMessage} disabled={!chatInput.trim()}>
+                          <Send className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

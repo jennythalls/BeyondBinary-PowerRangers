@@ -36,7 +36,7 @@ const QuestBook = () => {
           className="flex w-72 items-center gap-4 rounded-xl border-2 border-border p-6 transition-colors hover:border-primary"
         >
           <Lightbulb className="h-10 w-10 text-primary" />
-          <span className="font-display text-lg font-semibold text-foreground">Self-Help Resources</span>
+          <span className="font-display text-lg font-semibold text-foreground">Support Resources</span>
         </button>
       </div>
     </div>

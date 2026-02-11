@@ -168,7 +168,7 @@ const SelfHelpResources = () => {
         <Button variant="ghost" size="icon" onClick={() => navigate("/questbook")}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="ml-2 font-display text-xl font-semibold text-foreground">Self-Help Resources</h1>
+        <h1 className="ml-2 font-display text-xl font-semibold text-foreground">Support Resources</h1>
       </header>
 
       <div className="flex-1 space-y-8 px-4 pb-8 sm:px-6">
@@ -184,7 +184,7 @@ const SelfHelpResources = () => {
 
         {/* Singapore Helplines */}
         <section>
-          <h2 className="mb-4 font-display text-lg font-semibold text-foreground">🇸🇬 Singapore Helplines &amp; Services</h2>
+          <h2 className="mb-4 font-display text-lg font-semibold text-foreground">Singapore Helplines &amp; Services</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             {sgHelplines.map((r) => (
               <ResourceCard key={r.name} resource={r as any} />

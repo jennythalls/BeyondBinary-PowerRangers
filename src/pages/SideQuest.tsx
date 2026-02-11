@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +39,7 @@ interface Quest {
 
 const SideQuest = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { user } = useAuth();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -432,7 +434,18 @@ const SideQuest = () => {
   };
 
   const handleCreate = async () => {
-    if (!title || !location || !questDate || !startTime || !endTime || !user) return;
+    const missing: string[] = [];
+    if (!title) missing.push("Title");
+    if (!category) missing.push("Category");
+    if (!questDate) missing.push("Date");
+    if (!startTime) missing.push("Start Time");
+    if (!endTime) missing.push("End Time");
+    if (!location) missing.push("Location");
+    if (missing.length > 0) {
+      toast({ title: "Please fill in the required fields", description: missing.join(", "), variant: "destructive" });
+      return;
+    }
+    if (!user) return;
 
     const google = (window as any).google;
     if (!google) return;

@@ -359,10 +359,7 @@ const SideQuest = () => {
         )}
       </div>
 
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2">
-        <div className="rounded-full bg-background/90 backdrop-blur border border-border px-4 py-1.5 text-sm font-medium text-foreground shadow">
-          {quests.length} {quests.length === 1 ? "Quest" : "Quests"} Active
-        </div>
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10">
         <Button onClick={() => setShowCreate(true)} className="rounded-full px-6 gap-2">
           <Plus className="h-5 w-5" />
           Create Quest

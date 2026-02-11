@@ -1,11 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Wind, BriefcaseBusiness, Moon, Heart } from "lucide-react";
+import { ArrowLeft, Heart } from "lucide-react";
 
 const resources = [
-  { label: "Feeling stressed", icon: Wind },
-  { label: "Study / work burnout", icon: BriefcaseBusiness },
-  { label: "Sleep issues", icon: Moon },
   { label: "Mental health support", icon: Heart },
 ];
 

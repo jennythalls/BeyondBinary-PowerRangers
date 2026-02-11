@@ -240,7 +240,11 @@ const SideQuest = () => {
     if (fetchError || !data) return;
 
     const activeQuests = data.filter((q: any) => {
-      const endDateTime = new Date(`${q.quest_date}T${q.end_time}`);
+      let endDateTime = new Date(`${q.quest_date}T${q.end_time}`);
+      // If end_time is earlier than start_time, the quest crosses midnight — add a day
+      if (q.end_time <= q.start_time) {
+        endDateTime = new Date(endDateTime.getTime() + 24 * 60 * 60 * 1000);
+      }
       return endDateTime > now;
     });
 

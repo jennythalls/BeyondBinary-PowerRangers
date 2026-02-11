@@ -759,73 +759,92 @@ const SideQuest = () => {
         );
       })()}
       {/* My Quests List */}
-      {showList && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-          <div className="w-full max-w-md rounded-xl border-2 border-border bg-background p-6 shadow-lg max-h-[90vh] overflow-y-auto">
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="font-display text-xl font-semibold text-foreground">My Quests</h2>
-              <Button variant="ghost" size="icon" onClick={() => setShowList(false)}>
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
+      {showList && (() => {
+        const createdQuests = quests.filter((q) => q.user_id === user?.id);
+        const joinedQuests = quests.filter((q) => q.user_id !== user?.id && q.participants?.some(p => p.user_id === user?.id));
 
-            {myQuests.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">You haven't created any quests yet.</p>
-            ) : (
-              <div className="space-y-3">
-                {myQuests.map((quest) => (
-                  <div
-                    key={quest.id}
-                    className="rounded-lg border border-border p-4 space-y-2 cursor-pointer hover:border-primary transition-colors"
-                    onClick={() => { setShowList(false); setSelectedQuest(quest); setChatQuestId(quest.id); }}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <h3 className="font-semibold text-foreground truncate">{quest.title}</h3>
-                        <p className="text-xs text-muted-foreground capitalize">{quest.category}</p>
-                      </div>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="shrink-0 gap-1.5"
-                        onClick={(e) => { e.stopPropagation(); handleEndQuest(quest.id); }}
-                      >
-                        <Square className="h-3 w-3" />
-                        End
-                      </Button>
-                    </div>
-                    <div className="text-sm text-muted-foreground space-y-0.5">
-                      <p className="flex items-center gap-1.5">
-                        <MapPin className="h-3.5 w-3.5" />
-                        {quest.location}
-                      </p>
-                      <p className="flex items-center gap-1.5">
-                        <CalendarIcon className="h-3.5 w-3.5" />
-                        {quest.quest_date}
-                      </p>
-                      <p>{quest.start_time} – {quest.end_time}</p>
-                      <p className="flex items-center gap-1.5">
-                        <Users className="h-3.5 w-3.5" />
-                        {quest.participants?.length || 0} joined
-                        <span className="ml-1 text-xs">
-                          <span className="text-blue-500">♂{quest.participants?.filter(p => p.gender === "male").length || 0}</span>
-                          {" "}
-                          <span className="text-pink-400">♀{quest.participants?.filter(p => p.gender === "female").length || 0}</span>
-                          {" "}
-                          <span className="text-gray-400">○{(quest.participants?.length || 0) - (quest.participants?.filter(p => p.gender === "male").length || 0) - (quest.participants?.filter(p => p.gender === "female").length || 0)}</span>
-                        </span>
-                      </p>
-                    </div>
-                    {quest.details && (
-                      <p className="text-sm text-muted-foreground border-t border-border pt-2">{quest.details}</p>
-                    )}
-                  </div>
-                ))}
+        const renderQuestCard = (quest: Quest, showEnd: boolean) => (
+          <div
+            key={quest.id}
+            className="rounded-lg border border-border p-4 space-y-2 cursor-pointer hover:border-primary transition-colors"
+            onClick={() => { setShowList(false); setSelectedQuest(quest); setChatQuestId(quest.id); }}
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <h3 className="font-semibold text-foreground truncate">{quest.title}</h3>
+                <p className="text-xs text-muted-foreground capitalize">{quest.category}</p>
               </div>
+              {showEnd && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="shrink-0 gap-1.5"
+                  onClick={(e) => { e.stopPropagation(); handleEndQuest(quest.id); }}
+                >
+                  <Square className="h-3 w-3" />
+                  End
+                </Button>
+              )}
+            </div>
+            <div className="text-sm text-muted-foreground space-y-0.5">
+              <p className="flex items-center gap-1.5">
+                <MapPin className="h-3.5 w-3.5" />
+                {quest.location}
+              </p>
+              <p className="flex items-center gap-1.5">
+                <CalendarIcon className="h-3.5 w-3.5" />
+                {quest.quest_date}
+              </p>
+              <p>{quest.start_time} – {quest.end_time}</p>
+              <p className="flex items-center gap-1.5">
+                <Users className="h-3.5 w-3.5" />
+                {quest.participants?.length || 0} joined
+                <span className="ml-1 text-xs">
+                  <span className="text-blue-500">♂{quest.participants?.filter(p => p.gender === "male").length || 0}</span>
+                  {" "}
+                  <span className="text-pink-400">♀{quest.participants?.filter(p => p.gender === "female").length || 0}</span>
+                  {" "}
+                  <span className="text-gray-400">○{(quest.participants?.length || 0) - (quest.participants?.filter(p => p.gender === "male").length || 0) - (quest.participants?.filter(p => p.gender === "female").length || 0)}</span>
+                </span>
+              </p>
+            </div>
+            {quest.details && (
+              <p className="text-sm text-muted-foreground border-t border-border pt-2">{quest.details}</p>
             )}
           </div>
-        </div>
-      )}
+        );
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+            <div className="w-full max-w-md rounded-xl border-2 border-border bg-background p-6 shadow-lg max-h-[90vh] overflow-y-auto">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="font-display text-xl font-semibold text-foreground">My Quests</h2>
+                <Button variant="ghost" size="icon" onClick={() => setShowList(false)}>
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+
+              <h3 className="font-semibold text-foreground text-sm mb-2">Created by me</h3>
+              {createdQuests.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No quests created yet.</p>
+              ) : (
+                <div className="space-y-3 mb-6">
+                  {createdQuests.map((quest) => renderQuestCard(quest, true))}
+                </div>
+              )}
+
+              <h3 className="font-semibold text-foreground text-sm mb-2">Joined</h3>
+              {joinedQuests.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">You haven't joined any quests yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {joinedQuests.map((quest) => renderQuestCard(quest, false))}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Create Quest Modal */}
       {showCreate && (

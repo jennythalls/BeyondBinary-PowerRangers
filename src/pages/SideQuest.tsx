@@ -56,8 +56,9 @@ const SideQuest = () => {
 
   const clustererRef = useRef<any>(null);
   const clusterInfoWindowRef = useRef<any>(null);
+  const loadQuestsRef = useRef<() => Promise<void>>();
 
-  const rebuildMarkers = useCallback((questList: Quest[]) => {
+  const rebuildMarkers = useCallback((questList: Quest[], currentUserId?: string) => {
     const map = mapInstanceRef.current;
     const google = (window as any).google;
     const MarkerClusterer = (window as any).markerClusterer?.MarkerClusterer;
@@ -73,6 +74,41 @@ const SideQuest = () => {
     }
 
     const markerQuestMap = new Map<any, Quest[]>();
+
+    // Set up global join handler for info window buttons
+    (window as any).__questJoin = (questId: string) => {
+      if (!currentUserId) return;
+      supabase.from("quest_participants" as any).insert({
+        quest_id: questId,
+        user_id: currentUserId,
+      } as any).then(() => loadQuestsRef.current?.());
+    };
+
+    (window as any).__questLeave = (questId: string) => {
+      if (!currentUserId) return;
+      supabase.from("quest_participants" as any)
+        .delete()
+        .eq("quest_id", questId)
+        .eq("user_id", currentUserId)
+        .then(() => loadQuestsRef.current?.());
+    };
+
+    const questCardHtml = (q: Quest) => {
+      const isJoined = q.participants?.some(p => p.user_id === currentUserId);
+      const isOwner = q.user_id === currentUserId;
+      const btnHtml = !currentUserId ? ''
+        : isOwner ? '<div style="font-size:11px; color:#888; margin-top:4px;">Your quest</div>'
+        : isJoined
+          ? `<button onclick="window.__questLeave('${q.id}')" style="margin-top:4px; padding:2px 10px; font-size:11px; background:#eee; border:1px solid #ccc; border-radius:4px; cursor:pointer;">Leave</button>`
+          : `<button onclick="window.__questJoin('${q.id}')" style="margin-top:4px; padding:2px 10px; font-size:11px; background:#3b82f6; color:#fff; border:none; border-radius:4px; cursor:pointer;">Join</button>`;
+      return `<div style="padding:4px 0; border-bottom:1px solid #eee;">
+        <strong>${q.title}</strong>
+        <div style="font-size:12px; color:#666;">${q.category} · ${q.quest_date}</div>
+        <div style="font-size:12px; color:#666;">${q.start_time} – ${q.end_time}</div>
+        <div style="font-size:11px; color:#999;">by ${q.creator_name || "Unknown"} · 👥 ${q.participants?.length || 0}</div>
+        ${btnHtml}
+      </div>`;
+    };
 
     // Group quests by location
     const locationGroups = new Map<string, Quest[]>();
@@ -92,21 +128,10 @@ const SideQuest = () => {
       });
 
       const content = groupQuests.length === 1
-        ? (() => {
-            const quest = groupQuests[0];
-            const participantCount = quest.participants?.length || 0;
-            return `<div style="color:#000;"><strong>${quest.title}</strong><br/><span>${quest.category}</span><br/><span>${quest.quest_date}</span><br/><span>${quest.start_time} - ${quest.end_time}</span><br/><small>by ${quest.creator_name || "Unknown"}</small><br/><small>👥 ${participantCount} joined</small></div>`;
-          })()
+        ? `<div style="color:#000; min-width:160px;">${questCardHtml(groupQuests[0])}</div>`
         : `<div style="color:#000; max-height:200px; overflow-y:auto; min-width:180px;">
             <strong style="font-size:14px; display:block; margin-bottom:6px;">${groupQuests.length} Quests</strong>
-            ${groupQuests.map((q) => `
-              <div style="padding:4px 0; border-bottom:1px solid #eee; cursor:pointer;" data-quest-id="${q.id}">
-                <strong>${q.title}</strong>
-                <div style="font-size:12px; color:#666;">${q.category} · ${q.quest_date}</div>
-                <div style="font-size:12px; color:#666;">${q.start_time} – ${q.end_time}</div>
-                <div style="font-size:11px; color:#999;">by ${q.creator_name || "Unknown"} · 👥 ${q.participants?.length || 0}</div>
-              </div>
-            `).join("")}
+            ${groupQuests.map(questCardHtml).join("")}
           </div>`;
 
       const infoWindow = new google.maps.InfoWindow({ content });
@@ -142,14 +167,7 @@ const SideQuest = () => {
 
           const content = `<div style="color:#000; max-height:200px; overflow-y:auto; min-width:180px;">
             <strong style="font-size:14px; display:block; margin-bottom:6px;">${questItems.length} Quests</strong>
-            ${questItems.map((q) => `
-              <div style="padding:4px 0; border-bottom:1px solid #eee;">
-                <strong>${q.title}</strong>
-                <div style="font-size:12px; color:#666;">${q.category} · ${q.quest_date}</div>
-                <div style="font-size:12px; color:#666;">${q.start_time} – ${q.end_time}</div>
-                <div style="font-size:11px; color:#999;">by ${q.creator_name || "Unknown"} · 👥 ${q.participants?.length || 0}</div>
-              </div>
-            `).join("")}
+            ${questItems.map(questCardHtml).join("")}
           </div>`;
 
           const iw = new google.maps.InfoWindow({
@@ -222,7 +240,7 @@ const SideQuest = () => {
     }));
 
     setQuests(enriched);
-    rebuildMarkers(enriched);
+    rebuildMarkers(enriched, user?.id);
 
     // Update selected quest if it's open
     if (selectedQuest) {
@@ -230,6 +248,8 @@ const SideQuest = () => {
       if (updated) setSelectedQuest(updated);
     }
   }, [rebuildMarkers, selectedQuest?.id]);
+
+  useEffect(() => { loadQuestsRef.current = loadQuests; }, [loadQuests]);
 
   useEffect(() => {
     const loadScript = (src: string): Promise<void> =>

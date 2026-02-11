@@ -48,6 +48,9 @@ const SideQuest = () => {
   const [selectedQuest, setSelectedQuest] = useState<Quest | null>(null);
   const CATEGORIES = ["food", "study", "fitness", "errands", "others"] as const;
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set(CATEGORIES));
+  const [filterDate, setFilterDate] = useState<Date>();
+  const [filterStartTime, setFilterStartTime] = useState("");
+  const [filterEndTime, setFilterEndTime] = useState("");
 
   // Form state
   const [title, setTitle] = useState("");
@@ -302,11 +305,20 @@ const SideQuest = () => {
 
   useEffect(() => { loadQuestsRef.current = loadQuests; }, [loadQuests]);
 
-  // Rebuild markers when category filter changes
+  // Rebuild markers when filters change
   useEffect(() => {
-    const filtered = quests.filter(q => selectedCategories.has(q.category));
+    const filtered = quests.filter(q => {
+      if (!selectedCategories.has(q.category)) return false;
+      if (filterDate) {
+        const fd = format(filterDate, "yyyy-MM-dd");
+        if (q.quest_date !== fd) return false;
+      }
+      if (filterStartTime && q.start_time < filterStartTime) return false;
+      if (filterEndTime && q.end_time > filterEndTime) return false;
+      return true;
+    });
     rebuildMarkers(filtered, user?.id);
-  }, [selectedCategories, quests, rebuildMarkers, user?.id]);
+  }, [selectedCategories, filterDate, filterStartTime, filterEndTime, quests, rebuildMarkers, user?.id]);
 
   useEffect(() => {
     const loadScript = (src: string): Promise<void> =>
@@ -543,29 +555,79 @@ const SideQuest = () => {
               <Button variant="outline" className="gap-2">
                 <Filter className="h-5 w-5" />
                 Filter
-                {selectedCategories.size < CATEGORIES.length && (
-                  <span className="ml-1 rounded-full bg-primary text-primary-foreground text-[10px] px-1.5">{selectedCategories.size}</span>
+                {(selectedCategories.size < CATEGORIES.length || filterDate || filterStartTime || filterEndTime) && (
+                  <span className="ml-1 rounded-full bg-primary text-primary-foreground text-[10px] px-1.5">●</span>
                 )}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="z-[60] bg-popover w-44">
-              {CATEGORIES.map((cat) => (
-                <DropdownMenuCheckboxItem
-                  key={cat}
-                  checked={selectedCategories.has(cat)}
-                  onCheckedChange={(checked) => {
-                    setSelectedCategories(prev => {
-                      const next = new Set(prev);
-                      if (checked) next.add(cat);
-                      else next.delete(cat);
-                      return next;
-                    });
-                  }}
-                  className="capitalize"
-                >
-                  {cat}
-                </DropdownMenuCheckboxItem>
-              ))}
+            <DropdownMenuContent align="end" className="z-[60] bg-popover w-64 p-3 space-y-3">
+              <div>
+                <p className="text-xs font-medium text-foreground mb-1">Category</p>
+                {CATEGORIES.map((cat) => (
+                  <DropdownMenuCheckboxItem
+                    key={cat}
+                    checked={selectedCategories.has(cat)}
+                    onCheckedChange={(checked) => {
+                      setSelectedCategories(prev => {
+                        const next = new Set(prev);
+                        if (checked) next.add(cat);
+                        else next.delete(cat);
+                        return next;
+                      });
+                    }}
+                    className="capitalize"
+                  >
+                    {cat}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </div>
+              <div className="border-t border-border pt-2">
+                <p className="text-xs font-medium text-foreground mb-1">Date</p>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={cn("w-full justify-start text-left text-xs h-8", !filterDate && "text-muted-foreground")}
+                    >
+                      <CalendarIcon className="mr-2 h-3 w-3" />
+                      {filterDate ? format(filterDate, "PPP") : "Any date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 z-[70]" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={filterDate}
+                      onSelect={setFilterDate}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="border-t border-border pt-2 grid grid-cols-2 gap-2">
+                <div>
+                  <p className="text-xs font-medium text-foreground mb-1">Start after</p>
+                  <Input type="time" value={filterStartTime} onChange={(e) => setFilterStartTime(e.target.value)} className="h-8 text-xs" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-foreground mb-1">End before</p>
+                  <Input type="time" value={filterEndTime} onChange={(e) => setFilterEndTime(e.target.value)} className="h-8 text-xs" />
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-xs h-7"
+                onClick={() => {
+                  setSelectedCategories(new Set(CATEGORIES));
+                  setFilterDate(undefined);
+                  setFilterStartTime("");
+                  setFilterEndTime("");
+                }}
+              >
+                Clear all filters
+              </Button>
             </DropdownMenuContent>
           </DropdownMenu>
           <Button variant="outline" onClick={() => setShowList(true)} className="gap-2">

@@ -93,11 +93,20 @@ const SideQuest = () => {
         .then(() => loadQuestsRef.current?.());
     };
 
+    (window as any).__questEnd = (questId: string) => {
+      if (!currentUserId) return;
+      supabase.from("quests")
+        .delete()
+        .eq("id", questId)
+        .then(() => loadQuestsRef.current?.());
+    };
+
     const questCardHtml = (q: Quest) => {
       const isJoined = q.participants?.some(p => p.user_id === currentUserId);
       const isOwner = q.user_id === currentUserId;
       const btnHtml = !currentUserId ? ''
-        : isOwner ? '<div style="font-size:11px; color:#888; margin-top:4px;">Your quest</div>'
+        : isOwner
+          ? `<button onclick="window.__questEnd('${q.id}')" style="margin-top:4px; padding:2px 10px; font-size:11px; background:#ef4444; color:#fff; border:none; border-radius:4px; cursor:pointer;">End Quest</button>`
         : isJoined
           ? `<button onclick="window.__questLeave('${q.id}')" style="margin-top:4px; padding:2px 10px; font-size:11px; background:#eee; border:1px solid #ccc; border-radius:4px; cursor:pointer;">Leave</button>`
           : `<button onclick="window.__questJoin('${q.id}')" style="margin-top:4px; padding:2px 10px; font-size:11px; background:#3b82f6; color:#fff; border:none; border-radius:4px; cursor:pointer;">Join</button>`;

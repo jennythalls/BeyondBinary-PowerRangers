@@ -20,7 +20,7 @@ const QuestBook = () => {
           className="flex w-72 items-center gap-4 rounded-xl border-2 border-border p-6 transition-colors hover:border-primary"
         >
           <Sparkles className="h-10 w-10 text-primary" />
-          <span className="font-display text-lg font-semibold text-foreground">Motivation Quotes</span>
+          <span className="font-display text-lg font-semibold text-foreground">Motivational Quotes</span>
         </button>
 
         <button

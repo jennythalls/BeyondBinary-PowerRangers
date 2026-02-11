@@ -11,7 +11,6 @@ const AuthPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [birthday, setBirthday] = useState("");
   const [gender, setGender] = useState("");
   const [loading, setLoading] = useState(false);
   const { signIn, signUp } = useAuth();
@@ -26,7 +25,7 @@ const AuthPage = () => {
         setLoading(false);
         return;
       }
-      const { error } = await signUp(email, password, displayName, birthday, gender);
+      const { error } = await signUp(email, password, displayName, gender);
       if (error) {
         toast.error(error.message);
       } else {
@@ -67,19 +66,6 @@ const AuthPage = () => {
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="Your name"
-                required
-              />
-            </div>
-          )}
-
-          {isSignUp && (
-            <div className="space-y-2">
-              <Label htmlFor="birthday">Birthday</Label>
-              <Input
-                id="birthday"
-                type="date"
-                value={birthday}
-                onChange={(e) => setBirthday(e.target.value)}
                 required
               />
             </div>

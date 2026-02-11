@@ -1,73 +1,174 @@
-# Welcome to your Lovable project
+# 🌿 SafeSpace – NTU Community & Wellness Platform
 
-## Project info
+## 🚀 Overview
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+SafeSpace is a secure, NTU-exclusive digital platform designed to strengthen student connection and mental wellbeing.
 
-## How can I edit this code?
+University students often face social isolation and academic burnout simultaneously. While social platforms exist, they lack safety controls and campus relevance. Mental health tools, on the other hand, are often detached from community interaction.
 
-There are several ways of editing your application.
+SafeSpace integrates:
 
-**Use Lovable**
+- 🗺 **SideQuest** – Real-time, map-based social meetups  
+- 🌿 **QuestBreak** – Structured mental wellness tools  
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+By combining verified identity, location-based discovery, and AI-assisted reflection, we create a safer and more connected NTU ecosystem.
 
-Changes made via Lovable will be committed automatically to this repo.
+---
 
-**Use your preferred IDE**
+# 🎯 Problem Statement
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+Students today:
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- Struggle to find spontaneous and safe social interactions
+- Feel unsafe meeting strangers online
+- Experience stress, burnout, and sleep issues
+- Lack structured tools to reflect and track emotional wellbeing
 
-Follow these steps:
+Our solution addresses both **community bonding and mental resilience** within one unified system.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+---
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# 🔐 Authentication & Security
 
-# Step 3: Install the necessary dependencies.
-npm i
+- NTU email verification required
+- User profile management (username, password)
+- Dark mode support
+- Gender-based colour indicators for enhanced safety awareness
+- Secure handling of API keys (no exposed credentials)
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+---
 
-**Edit a file directly in GitHub**
+# 🗺 SideQuest – Real-Time Campus Meetups
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Built using **Google Maps JavaScript API** and **Geocoding API**.
 
-**Use GitHub Codespaces**
+### Core Features:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+- Map / Satellite toggle
+- Zoom in/out functionality
+- Quest clustering when zoomed out
+- Hover-to-preview quest details
+- Category filtering
+- Date & time filtering
+- Real-time quest creation with automatic map plotting
+- Multiple quests at the same location
+- Join quest functionality
+- “My Quests” dashboard (created + joined quests)
+- Real-time chat system
+- Read receipts & unread message indicators
+- Manual or automatic quest expiry
 
-## What technologies are used for this project?
+SideQuest encourages low-pressure, spontaneous social engagement within a verified campus network.
 
-This project is built with:
+---
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+# 🌿 QuestBreak – Mental Wellness Support
 
-## How can I deploy this project?
+## ✨ AI-Generated Motivation
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+- 30 AI-generated motivational quotes daily
+- Dynamically refreshed content
 
-## Can I connect a custom domain to my Lovable project?
+## 📝 Guided Reflection
 
-Yes, you can!
+Emotion-based prompts:
+- Feeling stressed
+- Study/work burnout
+- Sleep issues
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+Features:
+- Structured journaling prompts
+- Save responses
+- Monthly filtering of reflections
+- Emotional trend tracking
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Research indicates that structured journaling improves emotional clarity and stress regulation.
+
+---
+
+# 📞 Support Resources
+
+Curated NTU and Singapore helplines categorized by:
+
+- Academic stress
+- Mental health crisis
+- Personal relationship issues
+
+Ensures students can quickly find the appropriate support channel.
+
+---
+
+# 🛠 Tech Stack
+
+### Frontend
+- React (or relevant framework)
+- Google Maps JavaScript API
+- Geocoding API
+
+### Backend
+- Authentication service
+- Real-time database for chat & quest storage
+- Secure environment variable configuration
+
+### AI Integration
+- AI-powered motivational quote generation
+- Dynamic reflection prompts
+
+---
+
+# 🏗 System Architecture
+
+User → Authentication →  
+SideQuest (Maps + Database + Chat System)  
+QuestBreak (AI Engine + Reflection Storage)
+
+---
+
+# 📂 Repository Structure
+/src
+/components
+/pages
+/utils
+/public
+README.md
+package.json
+
+
+---
+
+# 🔒 Security Considerations
+
+- NTU-only verified access
+- No API keys stored client-side
+- Secure database rules
+- Quest auto-expiry to prevent outdated events
+- Controlled chat access limited to quest participants
+
+---
+
+# 🚀 Future Improvements
+
+- Push notifications
+- AI-driven mood trend analytics
+- Safety check-in system
+- Moderation dashboard
+- Anonymous quest option
+
+---
+
+# 👥 Team Members
+
+- Member 1  
+- Member 2  
+- Member 3  
+
+---
+
+# 🏆 Hackathon Submission
+
+Built for: Beyond Binary
+Challenge Theme: How can data-driven, community-centred technologies reduce isolation and foster meaningful social engagement?
+
+---
+
+[Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)

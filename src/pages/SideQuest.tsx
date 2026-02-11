@@ -6,7 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ArrowLeft, List, Plus, X, MapPin, CalendarIcon, Square, Users, LogIn, LogOut, Send, MessageCircle, ChevronUp, ChevronDown } from "lucide-react";
+import { ArrowLeft, List, Plus, X, MapPin, CalendarIcon, Square, Users, LogIn, LogOut, Send, MessageCircle, ChevronUp, ChevronDown, Filter } from "lucide-react";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
@@ -45,6 +46,8 @@ const SideQuest = () => {
   const [showList, setShowList] = useState(false);
   const [quests, setQuests] = useState<Quest[]>([]);
   const [selectedQuest, setSelectedQuest] = useState<Quest | null>(null);
+  const CATEGORIES = ["food", "study", "fitness", "errands", "others"] as const;
+  const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set(CATEGORIES));
 
   // Form state
   const [title, setTitle] = useState("");
@@ -295,6 +298,12 @@ const SideQuest = () => {
 
   useEffect(() => { loadQuestsRef.current = loadQuests; }, [loadQuests]);
 
+  // Rebuild markers when category filter changes
+  useEffect(() => {
+    const filtered = quests.filter(q => selectedCategories.has(q.category));
+    rebuildMarkers(filtered, user?.id);
+  }, [selectedCategories, quests, rebuildMarkers, user?.id]);
+
   useEffect(() => {
     const loadScript = (src: string): Promise<void> =>
       new Promise((resolve, reject) => {
@@ -524,10 +533,42 @@ const SideQuest = () => {
           </Button>
           <h1 className="ml-2 font-display text-xl font-semibold text-foreground">SideQuest</h1>
         </div>
-        <Button variant="outline" onClick={() => setShowList(true)} className="gap-2">
-          <List className="h-5 w-5" />
-          My Quests
-        </Button>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Filter className="h-5 w-5" />
+                Filter
+                {selectedCategories.size < CATEGORIES.length && (
+                  <span className="ml-1 rounded-full bg-primary text-primary-foreground text-[10px] px-1.5">{selectedCategories.size}</span>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="z-[60] bg-popover w-44">
+              {CATEGORIES.map((cat) => (
+                <DropdownMenuCheckboxItem
+                  key={cat}
+                  checked={selectedCategories.has(cat)}
+                  onCheckedChange={(checked) => {
+                    setSelectedCategories(prev => {
+                      const next = new Set(prev);
+                      if (checked) next.add(cat);
+                      else next.delete(cat);
+                      return next;
+                    });
+                  }}
+                  className="capitalize"
+                >
+                  {cat}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button variant="outline" onClick={() => setShowList(true)} className="gap-2">
+            <List className="h-5 w-5" />
+            My Quests
+          </Button>
+        </div>
       </header>
 
       <div className="flex-1 px-4 pb-4">

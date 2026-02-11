@@ -956,7 +956,7 @@ const SideQuest = () => {
                   <h3 className="font-semibold text-foreground truncate">{quest.title}</h3>
                   {(unreadCounts[quest.id] || 0) > 0 && (
                     <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-5 shrink-0">
-                      {unreadCounts[quest.id]} new
+                      {unreadCounts[quest.id]} new {unreadCounts[quest.id] === 1 ? "message" : "messages"}
                     </Badge>
                   )}
                 </div>

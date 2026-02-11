@@ -489,11 +489,10 @@ const SideQuest = () => {
     } as any);
   };
 
-  const isMember = (quest: Quest) => isCreator(quest) || isParticipant(quest);
-
   const myQuests = quests.filter((q) => q.user_id === user?.id);
   const isParticipant = (quest: Quest) => quest.participants?.some(p => p.user_id === user?.id) || false;
   const isCreator = (quest: Quest) => quest.user_id === user?.id;
+  const isMember = (quest: Quest) => isCreator(quest) || isParticipant(quest);
 
   return (
     <div className="relative flex min-h-screen flex-col bg-background">

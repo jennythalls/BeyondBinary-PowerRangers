@@ -583,64 +583,59 @@ const SideQuest = () => {
                 )}
               </div>
 
-              {/* Group Chat */}
-              {isMember(selectedQuest) && (
-                <div className="border-t border-border pt-3">
-                  <button
-                    onClick={() => setShowChat(!showChat)}
-                    className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-colors w-full"
-                  >
-                    <MessageCircle className="h-4 w-4" />
-                    Group Chat
-                    {chatMessages.length > 0 && (
-                      <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] text-primary-foreground">
-                        {chatMessages.length}
-                      </span>
-                    )}
-                  </button>
-
-                  {showChat && (
-                    <div className="mt-3 flex flex-col">
-                      <div className="h-48 overflow-y-auto rounded-lg border border-border bg-muted/30 p-3 space-y-2">
-                        {chatMessages.length === 0 ? (
-                          <p className="text-xs text-muted-foreground text-center pt-16">No messages yet. Start the conversation!</p>
-                        ) : (
-                          chatMessages.map((msg) => (
-                            <div
-                              key={msg.id}
-                              className={cn(
-                                "max-w-[80%] rounded-lg px-3 py-1.5 text-xs",
-                                msg.user_id === user?.id
-                                  ? "ml-auto bg-primary text-primary-foreground"
-                                  : "bg-muted text-foreground"
-                              )}
-                            >
-                              {msg.user_id !== user?.id && (
-                                <p className="font-semibold text-[10px] opacity-70 mb-0.5">{msg.display_name}</p>
-                              )}
-                              <p>{msg.message}</p>
-                            </div>
-                          ))
-                        )}
-                        <div ref={chatEndRef} />
-                      </div>
-                      <div className="mt-2 flex gap-2">
-                        <Input
-                          placeholder="Type a message..."
-                          value={chatInput}
-                          onChange={(e) => setChatInput(e.target.value)}
-                          onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-                          className="text-xs h-8"
-                        />
-                        <Button size="sm" className="h-8 px-3" onClick={handleSendMessage} disabled={!chatInput.trim()}>
-                          <Send className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Right-side Chat Panel */}
+      {selectedQuest && isMember(selectedQuest) && (
+        <div className="fixed top-0 right-0 z-40 h-full w-80 border-l border-border bg-background shadow-lg flex flex-col">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+            <div className="flex items-center gap-2">
+              <MessageCircle className="h-4 w-4 text-primary" />
+              <span className="font-semibold text-sm text-foreground truncate">{selectedQuest.title}</span>
+            </div>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectedQuest(null)}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-3 space-y-2">
+            {chatMessages.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center pt-20">No messages yet. Start the conversation!</p>
+            ) : (
+              chatMessages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={cn(
+                    "max-w-[85%] rounded-lg px-3 py-1.5 text-xs",
+                    msg.user_id === user?.id
+                      ? "ml-auto bg-primary text-primary-foreground"
+                      : "bg-muted text-foreground"
+                  )}
+                >
+                  {msg.user_id !== user?.id && (
+                    <p className="font-semibold text-[10px] opacity-70 mb-0.5">{msg.display_name}</p>
+                  )}
+                  <p>{msg.message}</p>
+                </div>
+              ))
+            )}
+            <div ref={chatEndRef} />
+          </div>
+
+          <div className="border-t border-border p-3 flex gap-2">
+            <Input
+              placeholder="Type a message..."
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+              className="text-xs h-8"
+            />
+            <Button size="sm" className="h-8 px-3" onClick={handleSendMessage} disabled={!chatInput.trim()}>
+              <Send className="h-3.5 w-3.5" />
+            </Button>
           </div>
         </div>
       )}

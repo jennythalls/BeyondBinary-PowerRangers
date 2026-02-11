@@ -80,11 +80,21 @@ export default {
           from: { opacity: "0", transform: "translateY(8px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
+        "gate-open-left": {
+          "0%": { transform: "perspective(1200px) rotateY(0deg)" },
+          "100%": { transform: "perspective(1200px) rotateY(-105deg)" },
+        },
+        "gate-open-right": {
+          "0%": { transform: "perspective(1200px) rotateY(0deg)" },
+          "100%": { transform: "perspective(1200px) rotateY(105deg)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in": "fade-in 0.4s ease-out forwards",
+        "gate-open-left": "gate-open-left 2s ease-in-out forwards",
+        "gate-open-right": "gate-open-right 2s ease-in-out forwards",
       },
     },
   },

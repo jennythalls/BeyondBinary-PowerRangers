@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -9,11 +9,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
 const Index = () => {
-  const {
-    user,
-    signOut
-  } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [usernameOpen, setUsernameOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
@@ -21,15 +19,23 @@ const Index = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [saving, setSaving] = useState(false);
+  const [gateOpening, setGateOpening] = useState<"left" | "right" | null>(null);
+
+  const handleGateClick = useCallback((side: "left" | "right", path: string) => {
+    if (gateOpening) return;
+    setGateOpening(side);
+    setTimeout(() => {
+      navigate(path);
+    }, 1800);
+  }, [gateOpening, navigate]);
+
   const handleChangeUsername = async () => {
     if (!newDisplayName.trim()) {
       toast.error("Display name cannot be empty.");
       return;
     }
     setSaving(true);
-    const {
-      error
-    } = await supabase.from("profiles").update({
+    const { error } = await supabase.from("profiles").update({
       display_name: newDisplayName.trim()
     }).eq("user_id", user?.id);
     if (error) {
@@ -41,6 +47,7 @@ const Index = () => {
     }
     setSaving(false);
   };
+
   const handleChangePassword = async () => {
     if (newPassword.length < 6) {
       toast.error("Password must be at least 6 characters.");
@@ -51,9 +58,7 @@ const Index = () => {
       return;
     }
     setSaving(true);
-    const {
-      error
-    } = await supabase.auth.updateUser({
+    const { error } = await supabase.auth.updateUser({
       password: newPassword
     });
     if (error) {
@@ -66,7 +71,9 @@ const Index = () => {
     }
     setSaving(false);
   };
-  return <div className="flex min-h-screen flex-col bg-background">
+
+  return (
+    <div className="flex min-h-screen flex-col bg-background overflow-hidden">
       {/* Top bar */}
       <header className="flex items-center justify-between px-6 py-4">
         <div />
@@ -100,26 +107,38 @@ const Index = () => {
         </DropdownMenu>
       </header>
 
-      {/* Main content */}
-      <div className="flex-1 items-center justify-center px-4 flex flex-col text-destructive">
-        <div className="animate-fade-in">
-          <div className="flex gap-8">
-            <button onClick={() => navigate("/sidequest")} className="flex flex-col items-center gap-3 p-8 border-2 border-border rounded-xl hover:border-primary transition-colors w-52">
-              <div className="w-28 h-28 border-2 border-foreground rounded-md flex items-center justify-center">
-                <User className="h-14 w-14 text-primary" />
-              </div>
-              <span className="font-display font-semibold text-lg text-foreground">SideQuest</span>
-              <span className="text-xs text-muted-foreground text-center">Create & discover quests happening around you</span>
-            </button>
+      {/* Main content - Gate */}
+      <div className="flex-1 flex items-center justify-center px-4">
+        <div className="animate-fade-in flex" style={{ perspective: "1200px" }}>
+          {/* Left door - SideQuest */}
+          <button
+            onClick={() => handleGateClick("left", "/sidequest")}
+            className={`flex flex-col items-center gap-3 p-8 border-2 border-border rounded-l-xl border-r hover:border-primary transition-colors w-52 bg-background origin-left ${
+              gateOpening === "left" ? "animate-gate-open-left" : ""
+            } ${gateOpening === "right" ? "animate-gate-open-left" : ""}`}
+            disabled={!!gateOpening}
+          >
+            <div className="w-28 h-28 border-2 border-foreground rounded-md flex items-center justify-center">
+              <User className="h-14 w-14 text-primary" />
+            </div>
+            <span className="font-display font-semibold text-lg text-foreground">SideQuest</span>
+            <span className="text-xs text-muted-foreground text-center">Create & discover quests happening around you</span>
+          </button>
 
-            <button onClick={() => navigate("/questbook")} className="flex flex-col items-center gap-3 p-8 border-2 border-border rounded-xl hover:border-primary transition-colors w-52">
-              <div className="w-28 h-28 border-2 border-foreground rounded-md flex items-center justify-center">
-                <Heart className="h-14 w-14 text-primary fill-primary/30" />
-              </div>
-              <span className="font-display font-semibold text-lg text-foreground">QuestBreak</span>
-              <span className="text-xs text-muted-foreground text-center">Recharge with quotes, reflections & support</span>
-            </button>
-          </div>
+          {/* Right door - QuestBreak */}
+          <button
+            onClick={() => handleGateClick("right", "/questbook")}
+            className={`flex flex-col items-center gap-3 p-8 border-2 border-border rounded-r-xl border-l-0 hover:border-primary transition-colors w-52 bg-background origin-right ${
+              gateOpening === "right" ? "animate-gate-open-right" : ""
+            } ${gateOpening === "left" ? "animate-gate-open-right" : ""}`}
+            disabled={!!gateOpening}
+          >
+            <div className="w-28 h-28 border-2 border-foreground rounded-md flex items-center justify-center">
+              <Heart className="h-14 w-14 text-primary fill-primary/30" />
+            </div>
+            <span className="font-display font-semibold text-lg text-foreground">QuestBreak</span>
+            <span className="text-xs text-muted-foreground text-center">Recharge with quotes, reflections & support</span>
+          </button>
         </div>
       </div>
 
@@ -166,6 +185,7 @@ const Index = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>;
+    </div>
+  );
 };
 export default Index;

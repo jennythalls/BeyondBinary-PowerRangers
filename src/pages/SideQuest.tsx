@@ -624,6 +624,9 @@ const SideQuest = () => {
                       <p className="font-semibold text-[10px] opacity-70 mb-0.5">{msg.display_name}</p>
                     )}
                     <p>{msg.message}</p>
+                    <p className="text-[9px] opacity-50 mt-0.5 text-right">
+                      {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
                   </div>
                 ))
               )}

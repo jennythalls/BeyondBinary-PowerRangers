@@ -5,45 +5,33 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LogOut, User, Heart, UserCircle, Pencil, Lock } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-
 const Index = () => {
-  const { user, signOut } = useAuth();
+  const {
+    user,
+    signOut
+  } = useAuth();
   const navigate = useNavigate();
-
   const [usernameOpen, setUsernameOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [newDisplayName, setNewDisplayName] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [saving, setSaving] = useState(false);
-
   const handleChangeUsername = async () => {
     if (!newDisplayName.trim()) {
       toast.error("Display name cannot be empty.");
       return;
     }
     setSaving(true);
-    const { error } = await supabase
-      .from("profiles")
-      .update({ display_name: newDisplayName.trim() })
-      .eq("user_id", user?.id);
+    const {
+      error
+    } = await supabase.from("profiles").update({
+      display_name: newDisplayName.trim()
+    }).eq("user_id", user?.id);
     if (error) {
       toast.error(error.message);
     } else {
@@ -53,7 +41,6 @@ const Index = () => {
     }
     setSaving(false);
   };
-
   const handleChangePassword = async () => {
     if (newPassword.length < 6) {
       toast.error("Password must be at least 6 characters.");
@@ -64,7 +51,11 @@ const Index = () => {
       return;
     }
     setSaving(true);
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    const {
+      error
+    } = await supabase.auth.updateUser({
+      password: newPassword
+    });
     if (error) {
       toast.error(error.message);
     } else {
@@ -75,9 +66,7 @@ const Index = () => {
     }
     setSaving(false);
   };
-
-  return (
-    <div className="flex min-h-screen flex-col bg-background">
+  return <div className="flex min-h-screen flex-col bg-background">
       {/* Top bar */}
       <header className="flex items-center justify-between px-6 py-4">
         <div />
@@ -112,7 +101,7 @@ const Index = () => {
       </header>
 
       {/* Main content */}
-      <div className="flex flex-1 flex-col items-center justify-center px-4">
+      <div className="flex-1 items-center justify-center px-4 flex flex-col text-destructive">
         <div className="animate-fade-in">
           <div className="flex gap-8">
             <button onClick={() => navigate("/sidequest")} className="flex flex-col items-center gap-3 p-8 border-2 border-border rounded-xl hover:border-primary transition-colors w-52">
@@ -142,12 +131,7 @@ const Index = () => {
           </DialogHeader>
           <div className="space-y-2">
             <Label htmlFor="newDisplayName">New Display Name</Label>
-            <Input
-              id="newDisplayName"
-              value={newDisplayName}
-              onChange={(e) => setNewDisplayName(e.target.value)}
-              placeholder="Enter new display name"
-            />
+            <Input id="newDisplayName" value={newDisplayName} onChange={e => setNewDisplayName(e.target.value)} placeholder="Enter new display name" />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setUsernameOpen(false)}>Cancel</Button>
@@ -167,24 +151,11 @@ const Index = () => {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="newPassword">New Password</Label>
-              <Input
-                id="newPassword"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="••••••••"
-                minLength={6}
-              />
+              <Input id="newPassword" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="••••••••" minLength={6} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="••••••••"
-              />
+              <Input id="confirmPassword" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="••••••••" />
             </div>
           </div>
           <DialogFooter>
@@ -195,8 +166,6 @@ const Index = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;

@@ -767,7 +767,7 @@ const SideQuest = () => {
         const createdQuests = quests.filter((q) => q.user_id === user?.id);
         const joinedQuests = quests.filter((q) => q.user_id !== user?.id && q.participants?.some(p => p.user_id === user?.id));
 
-        const renderQuestCard = (quest: Quest, showEnd: boolean) => (
+        const renderQuestCard = (quest: Quest, mode: 'created' | 'joined') => (
           <div
             key={quest.id}
             className="rounded-lg border border-border p-4 space-y-2 cursor-pointer hover:border-primary transition-colors"
@@ -778,7 +778,7 @@ const SideQuest = () => {
                 <h3 className="font-semibold text-foreground truncate">{quest.title}</h3>
                 <p className="text-xs text-muted-foreground capitalize">{quest.category}</p>
               </div>
-              {showEnd && (
+              {mode === 'created' ? (
                 <Button
                   variant="destructive"
                   size="sm"
@@ -787,6 +787,16 @@ const SideQuest = () => {
                 >
                   <Square className="h-3 w-3" />
                   End
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0 gap-1.5"
+                  onClick={(e) => { e.stopPropagation(); handleLeaveQuest(quest.id); }}
+                >
+                  <LogOut className="h-3 w-3" />
+                  Leave
                 </Button>
               )}
             </div>
@@ -833,7 +843,7 @@ const SideQuest = () => {
                 <p className="text-sm text-muted-foreground text-center py-4">No quests created yet.</p>
               ) : (
                 <div className="space-y-3 mb-6">
-                  {createdQuests.map((quest) => renderQuestCard(quest, true))}
+                  {createdQuests.map((quest) => renderQuestCard(quest, 'created'))}
                 </div>
               )}
 
@@ -842,7 +852,7 @@ const SideQuest = () => {
                 <p className="text-sm text-muted-foreground text-center py-4">You haven't joined any quests yet.</p>
               ) : (
                 <div className="space-y-3">
-                  {joinedQuests.map((quest) => renderQuestCard(quest, false))}
+                  {joinedQuests.map((quest) => renderQuestCard(quest, 'joined'))}
                 </div>
               )}
             </div>

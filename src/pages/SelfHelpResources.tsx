@@ -27,8 +27,8 @@ const SelfHelpResources = () => {
             key={label}
             className="flex w-72 items-center gap-4 rounded-xl border-2 border-border p-6 transition-colors hover:border-primary"
           >
-            <Icon className="h-10 w-10 text-primary" />
-            <span className="font-display text-lg font-semibold text-foreground">{label}</span>
+            <Icon className="h-10 w-10 shrink-0 text-primary" />
+            <span className="font-display text-lg font-semibold text-foreground text-left">{label}</span>
           </button>
         ))}
       </div>

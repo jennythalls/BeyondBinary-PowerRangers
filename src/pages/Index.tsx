@@ -146,7 +146,7 @@ const Index = () => {
             <button
               onClick={() => handleGateClick("left", "/sidequest")}
               className={`group flex flex-col items-center gap-4 p-10 rounded-2xl border-2 border-border bg-card/80 backdrop-blur-sm w-56 transition-all duration-300 hover:bg-primary/5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10 ${
-                gateOpening === "left" ? "animate-vibrate border-primary/40 shadow-lg shadow-primary/10" : ""
+                gateOpening === "left" ? "border-primary/40 shadow-lg shadow-primary/10" : ""
               } ${!gateOpening ? "rounded-r-none border-r" : ""}`}
               disabled={!!gateOpening}
             >
@@ -175,7 +175,7 @@ const Index = () => {
             <button
               onClick={() => handleGateClick("right", "/questbook")}
               className={`group flex flex-col items-center gap-4 p-10 rounded-2xl border-2 border-border bg-card/80 backdrop-blur-sm w-56 transition-all duration-300 hover:bg-accent/5 hover:border-accent/40 hover:shadow-lg hover:shadow-accent/10 ${
-                gateOpening === "right" ? "animate-vibrate border-accent/40 shadow-lg shadow-accent/10" : ""
+                gateOpening === "right" ? "border-accent/40 shadow-lg shadow-accent/10" : ""
               } ${!gateOpening ? "rounded-l-none border-l-0" : ""}`}
               disabled={!!gateOpening}
             >

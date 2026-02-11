@@ -63,7 +63,7 @@ const SideQuest = () => {
   const [location, setLocation] = useState("");
   const [locationSuggestions, setLocationSuggestions] = useState<{ description: string; place_id: string }[]>([]);
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
-  const autocompleteServiceRef = useRef<any>(null);
+  const mapsApiKeyRef = useRef<string | null>(null);
   const locationInputRef = useRef<HTMLDivElement>(null);
 
   // Chat state
@@ -490,29 +490,46 @@ const SideQuest = () => {
     setLocation("");
   };
 
-  const handleLocationInput = (value: string) => {
+  const handleLocationInput = async (value: string) => {
     setLocation(value);
-    const google = (window as any).google;
-    if (!google || !value.trim()) {
+    if (!value.trim()) {
       setLocationSuggestions([]);
       setShowLocationDropdown(false);
       return;
     }
-    if (!autocompleteServiceRef.current) {
-      autocompleteServiceRef.current = new google.maps.places.AutocompleteService();
+    if (!mapsApiKeyRef.current) {
+      const { data } = await supabase.functions.invoke("get-maps-key");
+      if (data?.apiKey) mapsApiKeyRef.current = data.apiKey;
+      else return;
     }
-    autocompleteServiceRef.current.getPlacePredictions(
-      { input: value, componentRestrictions: { country: "sg" } },
-      (predictions: any[] | null) => {
-        if (predictions) {
-          setLocationSuggestions(predictions.map((p: any) => ({ description: p.description, place_id: p.place_id })));
-          setShowLocationDropdown(true);
-        } else {
-          setLocationSuggestions([]);
-          setShowLocationDropdown(false);
+    try {
+      const res = await fetch(
+        `https://places.googleapis.com/v1/places:autocomplete`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Goog-Api-Key": mapsApiKeyRef.current,
+          },
+          body: JSON.stringify({
+            input: value,
+            includedRegionCodes: ["sg"],
+          }),
         }
-      }
-    );
+      );
+      const json = await res.json();
+      const suggestions = (json.suggestions || [])
+        .filter((s: any) => s.placePrediction)
+        .map((s: any) => ({
+          description: s.placePrediction.text?.text || s.placePrediction.structuredFormat?.mainText?.text || "",
+          place_id: s.placePrediction.placeId,
+        }));
+      setLocationSuggestions(suggestions);
+      setShowLocationDropdown(suggestions.length > 0);
+    } catch {
+      setLocationSuggestions([]);
+      setShowLocationDropdown(false);
+    }
   };
 
   const handleSelectLocation = (description: string) => {

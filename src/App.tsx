@@ -9,6 +9,7 @@ import AuthPage from "./pages/AuthPage";
 import QuestBook from "./pages/QuestBook";
 import MotivationQuotes from "./pages/MotivationQuotes";
 import Reflections from "./pages/Reflections";
+import SelfHelpResources from "./pages/SelfHelpResources";
 import SideQuest from "./pages/SideQuest";
 import NotFound from "./pages/NotFound";
 
@@ -41,6 +42,7 @@ const App = () => (
             <Route path="/questbook" element={<ProtectedRoute><QuestBook /></ProtectedRoute>} />
             <Route path="/questbook/motivation" element={<ProtectedRoute><MotivationQuotes /></ProtectedRoute>} />
             <Route path="/questbook/reflections" element={<ProtectedRoute><Reflections /></ProtectedRoute>} />
+            <Route path="/questbook/selfhelp" element={<ProtectedRoute><SelfHelpResources /></ProtectedRoute>} />
             <Route path="/auth" element={<PublicRoute><AuthPage /></PublicRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -250,11 +250,18 @@ const SideQuest = () => {
 
     const nameMap = new Map(profiles?.map((p) => [p.user_id, p.display_name]) || []);
 
-    // Group participants by quest_id
+    // Group participants by quest_id, always include the creator
     const participantsByQuest = new Map<string, Participant[]>();
+    activeQuests.forEach((q: any) => {
+      const list: Participant[] = [{ user_id: q.user_id, display_name: nameMap.get(q.user_id) || "Unknown" }];
+      participantsByQuest.set(q.id, list);
+    });
     (participants as any[] || []).forEach((p: any) => {
       const list = participantsByQuest.get(p.quest_id) || [];
-      list.push({ user_id: p.user_id, display_name: nameMap.get(p.user_id) || "Unknown" });
+      // Avoid duplicating the creator
+      if (!list.some(existing => existing.user_id === p.user_id)) {
+        list.push({ user_id: p.user_id, display_name: nameMap.get(p.user_id) || "Unknown" });
+      }
       participantsByQuest.set(p.quest_id, list);
     });
 

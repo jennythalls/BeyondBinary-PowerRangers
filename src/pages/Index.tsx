@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LogOut, User, Heart, UserCircle, Pencil, Lock } from "lucide-react";
+import { LogOut, Users, Heart, UserCircle, Pencil, Lock, Compass, Sunrise } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -73,14 +73,24 @@ const Index = () => {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-background overflow-hidden">
+    <div className="flex min-h-screen flex-col bg-background overflow-hidden relative">
+      {/* Soft ambient background shapes */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full bg-primary/5 blur-3xl" />
+        <div className="absolute -bottom-40 -right-40 h-[28rem] w-[28rem] rounded-full bg-accent/5 blur-3xl" />
+        <div className="absolute top-1/3 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-primary/3 blur-3xl" />
+      </div>
+
       {/* Top bar */}
-      <header className="flex items-center justify-between px-6 py-4">
-        <div />
+      <header className="relative z-10 flex items-center justify-between px-6 py-4">
+        <div className="flex items-center gap-2">
+          <Sunrise className="h-5 w-5 text-accent" />
+          <span className="font-display text-sm font-medium text-muted-foreground tracking-wide">Your safe space</span>
+        </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <UserCircle className="h-6 w-6" />
+            <Button variant="ghost" size="icon" className="rounded-full hover:bg-primary/10">
+              <UserCircle className="h-6 w-6 text-muted-foreground" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
@@ -107,39 +117,70 @@ const Index = () => {
         </DropdownMenu>
       </header>
 
+      {/* Welcome text */}
+      <div className="relative z-10 mt-8 text-center px-4 animate-fade-in">
+        <h1 className="font-display text-2xl font-bold text-foreground tracking-tight">
+          Where would you like to go?
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+          Choose your path — connect with others or take a moment for yourself.
+        </p>
+      </div>
+
       {/* Main content - Gate */}
-      <div className="flex-1 flex items-center justify-center px-4">
+      <div className="relative z-10 flex-1 flex items-center justify-center px-4">
         <div className="animate-fade-in flex" style={{ perspective: "1200px" }}>
           {/* Left door - SideQuest */}
           <button
             onClick={() => handleGateClick("left", "/sidequest")}
-            className={`flex flex-col items-center gap-3 p-8 border-2 border-border rounded-l-xl border-r hover:border-primary transition-colors w-52 bg-background origin-left ${
-              gateOpening === "left" ? "animate-gate-open-left" : ""
-            } ${gateOpening === "right" ? "animate-gate-open-left" : ""}`}
+            className={`group flex flex-col items-center gap-4 p-10 rounded-l-2xl border-2 border-border border-r bg-card/80 backdrop-blur-sm w-56 origin-left transition-all duration-300 hover:bg-primary/5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10 ${
+              gateOpening ? "animate-gate-open-left" : ""
+            }`}
             disabled={!!gateOpening}
           >
-            <div className="w-28 h-28 border-2 border-foreground rounded-md flex items-center justify-center">
-              <User className="h-14 w-14 text-primary" />
+            <div className="w-24 h-24 rounded-2xl bg-primary/10 flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
+              <Users className="h-12 w-12 text-primary" />
             </div>
-            <span className="font-display font-semibold text-lg text-foreground">SideQuest</span>
-            <span className="text-xs text-muted-foreground text-center">Create & discover quests happening around you</span>
+            <div className="text-center">
+              <span className="font-display font-bold text-lg text-foreground flex items-center gap-1.5 justify-center">
+                <Compass className="h-4 w-4 text-primary" />
+                SideQuest
+              </span>
+              <span className="mt-1.5 block text-xs text-muted-foreground leading-relaxed">
+                Create & discover quests<br />happening around you
+              </span>
+            </div>
           </button>
 
           {/* Right door - QuestBreak */}
           <button
             onClick={() => handleGateClick("right", "/questbook")}
-            className={`flex flex-col items-center gap-3 p-8 border-2 border-border rounded-r-xl border-l-0 hover:border-primary transition-colors w-52 bg-background origin-right ${
-              gateOpening === "right" ? "animate-gate-open-right" : ""
-            } ${gateOpening === "left" ? "animate-gate-open-right" : ""}`}
+            className={`group flex flex-col items-center gap-4 p-10 rounded-r-2xl border-2 border-border border-l-0 bg-card/80 backdrop-blur-sm w-56 origin-right transition-all duration-300 hover:bg-accent/5 hover:border-accent/40 hover:shadow-lg hover:shadow-accent/10 ${
+              gateOpening ? "animate-gate-open-right" : ""
+            }`}
             disabled={!!gateOpening}
           >
-            <div className="w-28 h-28 border-2 border-foreground rounded-md flex items-center justify-center">
-              <Heart className="h-14 w-14 text-primary fill-primary/30" />
+            <div className="w-24 h-24 rounded-2xl bg-accent/10 flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
+              <Heart className="h-12 w-12 text-accent fill-accent/20" />
             </div>
-            <span className="font-display font-semibold text-lg text-foreground">QuestBreak</span>
-            <span className="text-xs text-muted-foreground text-center">Recharge with quotes, reflections & support</span>
+            <div className="text-center">
+              <span className="font-display font-bold text-lg text-foreground flex items-center gap-1.5 justify-center">
+                <Sunrise className="h-4 w-4 text-accent" />
+                QuestBreak
+              </span>
+              <span className="mt-1.5 block text-xs text-muted-foreground leading-relaxed">
+                Recharge with quotes,<br />reflections & support
+              </span>
+            </div>
           </button>
         </div>
+      </div>
+
+      {/* Gentle footer */}
+      <div className="relative z-10 pb-6 text-center">
+        <p className="text-xs text-muted-foreground/60 tracking-wide">
+          ✨ Every journey begins with a single step
+        </p>
       </div>
 
       {/* Change Username Dialog */}

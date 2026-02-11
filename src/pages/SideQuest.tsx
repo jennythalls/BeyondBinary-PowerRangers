@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 interface Participant {
   user_id: string;
   display_name: string;
+  gender?: string | null;
 }
 
 interface Quest {
@@ -245,22 +246,23 @@ const SideQuest = () => {
 
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("user_id, display_name")
+      .select("user_id, display_name, gender")
       .in("user_id", allUserIds.length > 0 ? allUserIds : ["__none__"]);
 
     const nameMap = new Map(profiles?.map((p) => [p.user_id, p.display_name]) || []);
+    const genderMap = new Map(profiles?.map((p) => [p.user_id, p.gender]) || []);
 
     // Group participants by quest_id, always include the creator
     const participantsByQuest = new Map<string, Participant[]>();
     activeQuests.forEach((q: any) => {
-      const list: Participant[] = [{ user_id: q.user_id, display_name: nameMap.get(q.user_id) || "Unknown" }];
+      const list: Participant[] = [{ user_id: q.user_id, display_name: nameMap.get(q.user_id) || "Unknown", gender: genderMap.get(q.user_id) }];
       participantsByQuest.set(q.id, list);
     });
     (participants as any[] || []).forEach((p: any) => {
       const list = participantsByQuest.get(p.quest_id) || [];
       // Avoid duplicating the creator
       if (!list.some(existing => existing.user_id === p.user_id)) {
-        list.push({ user_id: p.user_id, display_name: nameMap.get(p.user_id) || "Unknown" });
+        list.push({ user_id: p.user_id, display_name: nameMap.get(p.user_id) || "Unknown", gender: genderMap.get(p.user_id) });
       }
       participantsByQuest.set(p.quest_id, list);
     });
@@ -566,7 +568,10 @@ const SideQuest = () => {
                 {selectedQuest.participants && selectedQuest.participants.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {selectedQuest.participants.map((p) => (
-                      <span key={p.user_id} className="rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground">
+                      <span key={p.user_id} className={cn(
+                        "rounded-full px-3 py-1 text-xs text-white",
+                        p.gender === "male" ? "bg-blue-500" : p.gender === "female" ? "bg-pink-400" : "bg-gray-400"
+                      )}>
                         {p.display_name}
                       </span>
                     ))}
@@ -634,7 +639,10 @@ const SideQuest = () => {
                   {chatQuest.participants && chatQuest.participants.length > 0 ? (
                     <div className="flex flex-wrap gap-1">
                       {chatQuest.participants.map((p) => (
-                        <span key={p.user_id} className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+                        <span key={p.user_id} className={cn(
+                          "rounded-full px-2 py-0.5 text-[10px] text-white",
+                          p.gender === "male" ? "bg-blue-500" : p.gender === "female" ? "bg-pink-400" : "bg-gray-400"
+                        )}>
                           {p.display_name}
                         </span>
                       ))}

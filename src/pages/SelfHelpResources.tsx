@@ -111,6 +111,44 @@ const sgHelplines = [
     description: "Mandarin-language counselling hotline and multi-language support services.",
     tags: ["Counselling", "Mandarin"],
   },
+  {
+    name: "National Mental Health Helpline (Mindline)",
+    phone: "1771",
+    hours: "24 hours",
+    description: "Singapore's national mental health helpline providing support, information, and referrals.",
+    tags: ["Crisis", "Emotional Support"],
+  },
+  {
+    name: "AWARE Women's Helpline",
+    phone: "1800 777 5555",
+    hours: "Mon–Fri, 10am–6pm",
+    website: "https://www.aware.org.sg",
+    description: "Support for women facing abuse, harassment, discrimination, or emotional distress.",
+    tags: ["Women", "Counselling"],
+  },
+  {
+    name: "Big Love Child Protection Specialist Centre",
+    phone: "6445 0400",
+    website: "https://www.biglove.org.sg",
+    description: "Specialised intervention and support for child abuse and protection cases.",
+    tags: ["Children", "Protection"],
+  },
+  {
+    name: "SAGE Counselling Centre",
+    phone: "1800 555 5555",
+    hours: "Mon–Fri, 9am–6pm",
+    website: "https://www.sagecc.org.sg",
+    description: "Counselling for seniors facing emotional distress, loneliness, or mental health issues.",
+    tags: ["Elderly", "Counselling"],
+  },
+  {
+    name: "Limitless (by Singapore Anglican Community Services)",
+    phone: "1800 111 1213",
+    hours: "Mon–Fri, 10am–10pm; Sat, 10am–2pm",
+    website: "https://www.limitless.sg",
+    description: "Peer support and counselling for youth aged 12–25.",
+    tags: ["Youth", "Peer Support"],
+  },
 ];
 
 const ResourceCard = ({ resource }: { resource: typeof sgHelplines[0] & { location?: string } }) => (

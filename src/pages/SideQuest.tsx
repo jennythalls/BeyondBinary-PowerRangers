@@ -491,7 +491,7 @@ const SideQuest = () => {
     } as any);
   };
 
-  const myQuests = quests.filter((q) => q.user_id === user?.id);
+  const myQuests = quests.filter((q) => q.user_id === user?.id || q.participants?.some(p => p.user_id === user?.id));
   const isParticipant = (quest: Quest) => quest.participants?.some(p => p.user_id === user?.id) || false;
   const isCreator = (quest: Quest) => quest.user_id === user?.id;
   const isMember = (quest: Quest) => isCreator(quest) || isParticipant(quest);

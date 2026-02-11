@@ -47,6 +47,35 @@ export type Database = {
         }
         Relationships: []
       }
+      quest_participants: {
+        Row: {
+          id: string
+          joined_at: string
+          quest_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          quest_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          quest_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quest_participants_quest_id_fkey"
+            columns: ["quest_id"]
+            isOneToOne: false
+            referencedRelation: "quests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quests: {
         Row: {
           category: string

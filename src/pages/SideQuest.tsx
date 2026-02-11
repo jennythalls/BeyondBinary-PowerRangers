@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ArrowLeft, List, Plus, X, MapPin, CalendarIcon, Square, Users, LogIn, LogOut, Send, MessageCircle } from "lucide-react";
+import { ArrowLeft, List, Plus, X, MapPin, CalendarIcon, Square, Users, LogIn, LogOut, Send, MessageCircle, ChevronUp, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
@@ -527,7 +527,8 @@ const SideQuest = () => {
       </div>
 
       {/* Quest Detail Modal */}
-      {selectedQuest && (
+      {/* Quest detail modal - only shown when NOT a member (no chat panel) */}
+      {selectedQuest && !isMember(selectedQuest) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
           <div className="w-full max-w-md rounded-xl border-2 border-border bg-background p-6 shadow-lg max-h-[90vh] overflow-y-auto">
             <div className="mb-4 flex items-center justify-between">
@@ -568,32 +569,22 @@ const SideQuest = () => {
                 )}
               </div>
 
-              {/* Join / Leave / End buttons */}
+              {/* Join button for non-members */}
               <div className="pt-3 flex gap-2">
-                {isCreator(selectedQuest) ? (
-                  <Button variant="destructive" className="w-full gap-1.5" onClick={() => handleEndQuest(selectedQuest.id)}>
-                    <Square className="h-3.5 w-3.5" /> End Quest
-                  </Button>
-                ) : isParticipant(selectedQuest) ? (
-                  <Button variant="outline" className="w-full gap-1.5" onClick={() => handleLeaveQuest(selectedQuest.id)}>
-                    <LogOut className="h-3.5 w-3.5" /> Leave Quest
-                  </Button>
-                ) : (
-                  <Button className="w-full gap-1.5" onClick={() => handleJoinQuest(selectedQuest.id)}>
-                    <LogIn className="h-3.5 w-3.5" /> Join Quest
-                  </Button>
-                )}
+                <Button className="w-full gap-1.5" onClick={() => handleJoinQuest(selectedQuest.id)}>
+                  <LogIn className="h-3.5 w-3.5" /> Join Quest
+                </Button>
               </div>
-
             </div>
           </div>
         </div>
       )}
 
-      {/* Right-side Chat Panel */}
+      {/* Right-side Panel: Quest Details + Chat (for members) */}
       {chatQuestId && (() => {
         const chatQuest = quests.find(q => q.id === chatQuestId);
         if (!chatQuest || !isMember(chatQuest)) return null;
+        const showDetails = selectedQuest && selectedQuest.id === chatQuestId;
         return (
           <div className="fixed top-0 right-0 z-40 h-full w-80 border-l border-border bg-background shadow-lg flex flex-col">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border">
@@ -601,10 +592,63 @@ const SideQuest = () => {
                 <MessageCircle className="h-4 w-4 text-primary" />
                 <span className="font-semibold text-sm text-foreground truncate">{chatQuest.title}</span>
               </div>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setChatQuestId(null)}>
-                <X className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
+                  if (showDetails) {
+                    setSelectedQuest(null);
+                  } else {
+                    setSelectedQuest(chatQuest);
+                  }
+                }}>
+                  {showDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setChatQuestId(null); setSelectedQuest(null); }}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
+
+            {/* Collapsible Quest Details */}
+            {showDetails && (
+              <div className="border-b border-border p-3 space-y-2 text-xs text-muted-foreground overflow-y-auto max-h-60">
+                <p className="capitalize"><span className="font-medium text-foreground">Category:</span> {chatQuest.category}</p>
+                <p className="flex items-center gap-1.5"><MapPin className="h-3 w-3" /> {chatQuest.location}</p>
+                <p className="flex items-center gap-1.5"><CalendarIcon className="h-3 w-3" /> {chatQuest.quest_date}</p>
+                <p>{chatQuest.start_time} – {chatQuest.end_time}</p>
+                <p><span className="font-medium text-foreground">Created by:</span> {chatQuest.creator_name}</p>
+                {chatQuest.details && (
+                  <p className="border-t border-border pt-2">{chatQuest.details}</p>
+                )}
+                <div className="border-t border-border pt-2">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Users className="h-3 w-3 text-foreground" />
+                    <span className="font-medium text-foreground">Participants ({chatQuest.participants?.length || 0})</span>
+                  </div>
+                  {chatQuest.participants && chatQuest.participants.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {chatQuest.participants.map((p) => (
+                        <span key={p.user_id} className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+                          {p.display_name}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-muted-foreground">No one has joined yet.</p>
+                  )}
+                </div>
+                <div className="pt-2 flex gap-2">
+                  {isCreator(chatQuest) ? (
+                    <Button variant="destructive" size="sm" className="w-full gap-1 text-xs h-7" onClick={() => handleEndQuest(chatQuest.id)}>
+                      <Square className="h-3 w-3" /> End Quest
+                    </Button>
+                  ) : (
+                    <Button variant="outline" size="sm" className="w-full gap-1 text-xs h-7" onClick={() => handleLeaveQuest(chatQuest.id)}>
+                      <LogOut className="h-3 w-3" /> Leave Quest
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
               {chatMessages.length === 0 ? (
@@ -648,7 +692,6 @@ const SideQuest = () => {
           </div>
         );
       })()}
-
       {/* My Quests List */}
       {showList && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">

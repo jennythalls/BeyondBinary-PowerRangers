@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Wind, BriefcaseBusiness, Moon, Loader2, Send } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { ArrowLeft, Wind, BriefcaseBusiness, Moon, Loader2, Save } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
 
 const reflectionItems = [
   { label: "Feeling stressed", icon: Wind, category: "stressed" },
@@ -19,6 +21,13 @@ const fallbackQuestions: Record<string, string> = {
   sleep: "What thoughts keep you awake, and what would it feel like to set them aside for tonight?",
 };
 
+type SavedReflection = {
+  id: string;
+  question: string;
+  response: string;
+  created_at: string;
+};
+
 const Reflections = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -29,6 +38,27 @@ const Reflections = () => {
   const [answer, setAnswer] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [savedReflections, setSavedReflections] = useState<SavedReflection[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  const fetchHistory = async (category: string) => {
+    if (!user) return;
+    setLoadingHistory(true);
+    try {
+      const { data } = await supabase
+        .from("reflection_responses")
+        .select("id, question, response, created_at")
+        .eq("user_id", user.id)
+        .eq("category", category)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      setSavedReflections((data as SavedReflection[]) || []);
+    } catch {
+      setSavedReflections([]);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
 
   const handleSelect = async (category: string) => {
     setSelectedCategory(category);
@@ -36,6 +66,8 @@ const Reflections = () => {
     setQuestion("");
     setAnswer("");
     setSubmitted(false);
+
+    fetchHistory(category);
 
     try {
       const { data, error } = await supabase.functions.invoke("daily-reflection", {
@@ -58,17 +90,24 @@ const Reflections = () => {
 
     setSubmitting(true);
     try {
-      const { error } = await supabase.from("reflection_responses").insert({
-        user_id: user.id,
-        category: selectedCategory,
-        question,
-        response: answer.trim(),
-      });
+      const { data: inserted, error } = await supabase
+        .from("reflection_responses")
+        .insert({
+          user_id: user.id,
+          category: selectedCategory,
+          question,
+          response: answer.trim(),
+        })
+        .select("id, question, response, created_at")
+        .single();
 
       if (error) throw error;
 
       toast({ title: "Saved", description: "Your reflection has been recorded." });
       setSubmitted(true);
+      if (inserted) {
+        setSavedReflections((prev) => [inserted as SavedReflection, ...prev]);
+      }
     } catch (e) {
       console.error("Error saving reflection:", e);
       toast({ title: "Error", description: "Failed to save your reflection.", variant: "destructive" });
@@ -89,6 +128,7 @@ const Reflections = () => {
               setQuestion("");
               setAnswer("");
               setSubmitted(false);
+              setSavedReflections([]);
             } else {
               navigate("/questbook");
             }
@@ -114,34 +154,65 @@ const Reflections = () => {
         ) : loading ? (
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         ) : (
-          <div className="flex w-full max-w-md flex-col gap-6">
-            <div className="rounded-2xl border-2 border-border p-8 text-center">
-              <p className="text-xl font-semibold leading-relaxed text-foreground">{question}</p>
+          <div className="flex w-full max-w-5xl gap-8">
+            {/* Left: question + answer */}
+            <div className="flex flex-1 flex-col gap-6">
+              <div className="rounded-2xl border-2 border-border p-8 text-center">
+                <p className="text-xl font-semibold leading-relaxed text-foreground">{question}</p>
+              </div>
+
+              <Textarea
+                placeholder="Take a moment to reflect and write your thoughts here..."
+                value={answer}
+                onChange={(e) => setAnswer(e.target.value)}
+                disabled={submitted}
+                className="min-h-[140px] resize-none text-base"
+                maxLength={2000}
+              />
+
+              {!submitted ? (
+                <Button onClick={handleSubmit} disabled={submitting || !answer.trim()} className="w-full">
+                  {submitting ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="mr-2 h-4 w-4" />
+                  )}
+                  Save Reflection
+                </Button>
+              ) : (
+                <p className="text-center text-sm text-muted-foreground">
+                  ✓ Your reflection has been saved. Take care of yourself 💙
+                </p>
+              )}
             </div>
 
-            <Textarea
-              placeholder="Take a moment to reflect and write your thoughts here..."
-              value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
-              disabled={submitted}
-              className="min-h-[140px] resize-none text-base"
-              maxLength={2000}
-            />
-
-            {!submitted ? (
-              <Button onClick={handleSubmit} disabled={submitting || !answer.trim()} className="w-full">
-                {submitting ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="mr-2 h-4 w-4" />
-                )}
-                Submit Reflection
-              </Button>
-            ) : (
-              <p className="text-center text-sm text-muted-foreground">
-                ✓ Your reflection has been saved. Take care of yourself 💙
-              </p>
-            )}
+            {/* Right: saved reflections */}
+            <div className="hidden w-80 shrink-0 flex-col md:flex">
+              <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Saved Reflections
+              </h2>
+              {loadingHistory ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : savedReflections.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No saved reflections yet.</p>
+              ) : (
+                <ScrollArea className="h-[calc(100vh-200px)]">
+                  <div className="flex flex-col gap-3 pr-3">
+                    {savedReflections.map((r) => (
+                      <div key={r.id} className="rounded-xl border border-border p-4">
+                        <p className="text-xs font-medium text-muted-foreground">
+                          {format(new Date(r.created_at), "MMM d, yyyy")}
+                        </p>
+                        <p className="mt-1 text-sm font-medium text-foreground">{r.question}</p>
+                        <p className="mt-2 text-sm text-muted-foreground">{r.response}</p>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
+            </div>
           </div>
         )}
       </div>

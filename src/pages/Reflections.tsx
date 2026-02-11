@@ -71,12 +71,23 @@ const Reflections = () => {
 
     fetchHistory(category);
 
+    const today = new Date().toISOString().slice(0, 10);
+    const cacheKey = `reflection_q_${category}_${today}`;
+    const cached = localStorage.getItem(cacheKey);
+
+    if (cached) {
+      setQuestion(cached);
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await supabase.functions.invoke("daily-reflection", {
         body: { category },
       });
       if (!error && data?.question) {
         setQuestion(data.question);
+        localStorage.setItem(cacheKey, data.question);
       } else {
         setQuestion(fallbackQuestions[category]);
       }

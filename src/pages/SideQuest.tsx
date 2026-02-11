@@ -6,11 +6,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ArrowLeft, List, Plus, X, MapPin, CalendarIcon, Square } from "lucide-react";
+import { ArrowLeft, List, Plus, X, MapPin, CalendarIcon, Square, Users, LogIn, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+
+interface Participant {
+  user_id: string;
+  display_name: string;
+}
 
 interface Quest {
   id: string;
@@ -25,6 +30,7 @@ interface Quest {
   lng: number;
   user_id: string;
   creator_name?: string;
+  participants?: Participant[];
 }
 
 const SideQuest = () => {
@@ -37,6 +43,7 @@ const SideQuest = () => {
   const [showCreate, setShowCreate] = useState(false);
   const [showList, setShowList] = useState(false);
   const [quests, setQuests] = useState<Quest[]>([]);
+  const [selectedQuest, setSelectedQuest] = useState<Quest | null>(null);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -48,7 +55,6 @@ const SideQuest = () => {
   const [location, setLocation] = useState("");
 
   const clustererRef = useRef<any>(null);
-
   const clusterInfoWindowRef = useRef<any>(null);
 
   const rebuildMarkers = useCallback((questList: Quest[]) => {
@@ -57,7 +63,6 @@ const SideQuest = () => {
     const MarkerClusterer = (window as any).markerClusterer?.MarkerClusterer;
     if (!map || !google || !MarkerClusterer) return;
 
-    // Clear old
     markersRef.current.forEach((m) => m.setMap(null));
     markersRef.current = [];
     if (clustererRef.current) {
@@ -67,7 +72,6 @@ const SideQuest = () => {
       clusterInfoWindowRef.current.close();
     }
 
-    // Build a map from marker to quest for lookup
     const markerQuestMap = new Map<any, Quest>();
 
     const markers = questList.map((quest) => {
@@ -76,8 +80,9 @@ const SideQuest = () => {
         title: quest.title,
       });
 
+      const participantCount = quest.participants?.length || 0;
       const infoWindow = new google.maps.InfoWindow({
-        content: `<div style="color:#000;"><strong>${quest.title}</strong><br/><span>${quest.category}</span><br/><span>${quest.quest_date}</span><br/><span>${quest.start_time} - ${quest.end_time}</span><br/><small>by ${quest.creator_name || "Unknown"}</small></div>`,
+        content: `<div style="color:#000;"><strong>${quest.title}</strong><br/><span>${quest.category}</span><br/><span>${quest.quest_date}</span><br/><span>${quest.start_time} - ${quest.end_time}</span><br/><small>by ${quest.creator_name || "Unknown"}</small><br/><small>👥 ${participantCount} joined</small></div>`,
       });
 
       marker.addListener("click", () => infoWindow.open(map, marker));
@@ -92,7 +97,6 @@ const SideQuest = () => {
       map,
     });
 
-    // Add hover listener on cluster icons
     google.maps.event.addListener(clusterer, "clusteringend", () => {
       const clusters = clusterer.clusters;
       clusters.forEach((cluster: any) => {
@@ -119,7 +123,7 @@ const SideQuest = () => {
                 <strong>${q.title}</strong>
                 <div style="font-size:12px; color:#666;">${q.category} · ${q.quest_date}</div>
                 <div style="font-size:12px; color:#666;">${q.start_time} – ${q.end_time}</div>
-                <div style="font-size:11px; color:#999;">by ${q.creator_name || "Unknown"}</div>
+                <div style="font-size:11px; color:#999;">by ${q.creator_name || "Unknown"} · 👥 ${q.participants?.length || 0}</div>
               </div>
             `).join("")}
           </div>`;
@@ -159,22 +163,49 @@ const SideQuest = () => {
       return endDateTime > now;
     });
 
+    const questIds = activeQuests.map((q: any) => q.id);
     const userIds = [...new Set(activeQuests.map((q: any) => q.user_id))];
+
+    // Fetch participants for all active quests
+    const { data: participants } = await supabase
+      .from("quest_participants" as any)
+      .select("quest_id, user_id")
+      .in("quest_id", questIds.length > 0 ? questIds : ["__none__"]);
+
+    // Gather all participant user IDs too
+    const participantUserIds = (participants as any[] || []).map((p: any) => p.user_id);
+    const allUserIds = [...new Set([...userIds, ...participantUserIds])];
+
     const { data: profiles } = await supabase
       .from("profiles")
       .select("user_id, display_name")
-      .in("user_id", userIds);
+      .in("user_id", allUserIds.length > 0 ? allUserIds : ["__none__"]);
 
     const nameMap = new Map(profiles?.map((p) => [p.user_id, p.display_name]) || []);
+
+    // Group participants by quest_id
+    const participantsByQuest = new Map<string, Participant[]>();
+    (participants as any[] || []).forEach((p: any) => {
+      const list = participantsByQuest.get(p.quest_id) || [];
+      list.push({ user_id: p.user_id, display_name: nameMap.get(p.user_id) || "Unknown" });
+      participantsByQuest.set(p.quest_id, list);
+    });
 
     const enriched: Quest[] = activeQuests.map((q: any) => ({
       ...q,
       creator_name: nameMap.get(q.user_id) || "Unknown",
+      participants: participantsByQuest.get(q.id) || [],
     }));
 
     setQuests(enriched);
     rebuildMarkers(enriched);
-  }, [rebuildMarkers]);
+
+    // Update selected quest if it's open
+    if (selectedQuest) {
+      const updated = enriched.find(q => q.id === selectedQuest.id);
+      if (updated) setSelectedQuest(updated);
+    }
+  }, [rebuildMarkers, selectedQuest?.id]);
 
   useEffect(() => {
     const loadScript = (src: string): Promise<void> =>
@@ -222,6 +253,25 @@ const SideQuest = () => {
     loadMap();
   }, [loadQuests]);
 
+  const handleJoinQuest = async (questId: string) => {
+    if (!user) return;
+    await supabase.from("quest_participants" as any).insert({
+      quest_id: questId,
+      user_id: user.id,
+    } as any);
+    await loadQuests();
+  };
+
+  const handleLeaveQuest = async (questId: string) => {
+    if (!user) return;
+    await supabase
+      .from("quest_participants" as any)
+      .delete()
+      .eq("quest_id", questId)
+      .eq("user_id", user.id);
+    await loadQuests();
+  };
+
   const handleCreate = async () => {
     if (!title || !location || !questDate || !startTime || !endTime || !user) return;
 
@@ -267,6 +317,7 @@ const SideQuest = () => {
       .eq("id", questId);
 
     if (!deleteError) {
+      setSelectedQuest(null);
       await loadQuests();
     }
   };
@@ -282,6 +333,8 @@ const SideQuest = () => {
   };
 
   const myQuests = quests.filter((q) => q.user_id === user?.id);
+  const isParticipant = (quest: Quest) => quest.participants?.some(p => p.user_id === user?.id) || false;
+  const isCreator = (quest: Quest) => quest.user_id === user?.id;
 
   return (
     <div className="relative flex min-h-screen flex-col bg-background">
@@ -313,6 +366,69 @@ const SideQuest = () => {
         </Button>
       </div>
 
+      {/* Quest Detail Modal */}
+      {selectedQuest && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="w-full max-w-md rounded-xl border-2 border-border bg-background p-6 shadow-lg max-h-[90vh] overflow-y-auto">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="font-display text-xl font-semibold text-foreground">{selectedQuest.title}</h2>
+              <Button variant="ghost" size="icon" onClick={() => setSelectedQuest(null)}>
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+
+            <div className="space-y-3 text-sm text-muted-foreground">
+              <p className="capitalize"><span className="font-medium text-foreground">Category:</span> {selectedQuest.category}</p>
+              <p className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" /> {selectedQuest.location}</p>
+              <p className="flex items-center gap-1.5"><CalendarIcon className="h-3.5 w-3.5" /> {selectedQuest.quest_date}</p>
+              <p>{selectedQuest.start_time} – {selectedQuest.end_time}</p>
+              <p><span className="font-medium text-foreground">Created by:</span> {selectedQuest.creator_name}</p>
+              {selectedQuest.details && (
+                <p className="border-t border-border pt-2">{selectedQuest.details}</p>
+              )}
+
+              {/* Participants Section */}
+              <div className="border-t border-border pt-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="h-4 w-4 text-foreground" />
+                  <span className="font-medium text-foreground">
+                    Participants ({selectedQuest.participants?.length || 0})
+                  </span>
+                </div>
+                {selectedQuest.participants && selectedQuest.participants.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {selectedQuest.participants.map((p) => (
+                      <span key={p.user_id} className="rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground">
+                        {p.display_name}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">No one has joined yet.</p>
+                )}
+              </div>
+
+              {/* Join / Leave / End buttons */}
+              <div className="pt-3 flex gap-2">
+                {isCreator(selectedQuest) ? (
+                  <Button variant="destructive" className="w-full gap-1.5" onClick={() => handleEndQuest(selectedQuest.id)}>
+                    <Square className="h-3.5 w-3.5" /> End Quest
+                  </Button>
+                ) : isParticipant(selectedQuest) ? (
+                  <Button variant="outline" className="w-full gap-1.5" onClick={() => handleLeaveQuest(selectedQuest.id)}>
+                    <LogOut className="h-3.5 w-3.5" /> Leave Quest
+                  </Button>
+                ) : (
+                  <Button className="w-full gap-1.5" onClick={() => handleJoinQuest(selectedQuest.id)}>
+                    <LogIn className="h-3.5 w-3.5" /> Join Quest
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* My Quests List */}
       {showList && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
@@ -331,7 +447,8 @@ const SideQuest = () => {
                 {myQuests.map((quest) => (
                   <div
                     key={quest.id}
-                    className="rounded-lg border border-border p-4 space-y-2"
+                    className="rounded-lg border border-border p-4 space-y-2 cursor-pointer hover:border-primary transition-colors"
+                    onClick={() => { setShowList(false); setSelectedQuest(quest); }}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
@@ -342,7 +459,7 @@ const SideQuest = () => {
                         variant="destructive"
                         size="sm"
                         className="shrink-0 gap-1.5"
-                        onClick={() => handleEndQuest(quest.id)}
+                        onClick={(e) => { e.stopPropagation(); handleEndQuest(quest.id); }}
                       >
                         <Square className="h-3 w-3" />
                         End
@@ -358,6 +475,10 @@ const SideQuest = () => {
                         {quest.quest_date}
                       </p>
                       <p>{quest.start_time} – {quest.end_time}</p>
+                      <p className="flex items-center gap-1.5">
+                        <Users className="h-3.5 w-3.5" />
+                        {quest.participants?.length || 0} joined
+                      </p>
                     </div>
                     {quest.details && (
                       <p className="text-sm text-muted-foreground border-t border-border pt-2">{quest.details}</p>

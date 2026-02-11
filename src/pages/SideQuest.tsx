@@ -72,34 +72,47 @@ const SideQuest = () => {
       clusterInfoWindowRef.current.close();
     }
 
-    const markerQuestMap = new Map<any, Quest>();
+    const markerQuestMap = new Map<any, Quest[]>();
 
-    // Offset markers at the same location so they don't stack
-    const locationCounts = new Map<string, number>();
-    const offsetQuests = questList.map((quest) => {
+    // Group quests by location
+    const locationGroups = new Map<string, Quest[]>();
+    questList.forEach((quest) => {
       const key = `${quest.lat},${quest.lng}`;
-      const count = locationCounts.get(key) || 0;
-      locationCounts.set(key, count + 1);
-      const angle = (count * 2 * Math.PI) / Math.max(1, count + 1);
-      const offsetLat = count > 0 ? quest.lat + 0.0002 * Math.cos(angle) : quest.lat;
-      const offsetLng = count > 0 ? quest.lng + 0.0002 * Math.sin(angle) : quest.lng;
-      return { ...quest, offsetLat, offsetLng };
+      const group = locationGroups.get(key) || [];
+      group.push(quest);
+      locationGroups.set(key, group);
     });
 
-    const markers = offsetQuests.map((quest) => {
+    const markers: any[] = [];
+    locationGroups.forEach((groupQuests, key) => {
+      const [lat, lng] = key.split(",").map(Number);
       const marker = new google.maps.Marker({
-        position: { lat: quest.offsetLat, lng: quest.offsetLng },
-        title: quest.title,
+        position: { lat, lng },
+        title: groupQuests.length === 1 ? groupQuests[0].title : `${groupQuests.length} Quests`,
       });
 
-      const participantCount = quest.participants?.length || 0;
-      const infoWindow = new google.maps.InfoWindow({
-        content: `<div style="color:#000;"><strong>${quest.title}</strong><br/><span>${quest.category}</span><br/><span>${quest.quest_date}</span><br/><span>${quest.start_time} - ${quest.end_time}</span><br/><small>by ${quest.creator_name || "Unknown"}</small><br/><small>👥 ${participantCount} joined</small></div>`,
-      });
+      const content = groupQuests.length === 1
+        ? (() => {
+            const quest = groupQuests[0];
+            const participantCount = quest.participants?.length || 0;
+            return `<div style="color:#000;"><strong>${quest.title}</strong><br/><span>${quest.category}</span><br/><span>${quest.quest_date}</span><br/><span>${quest.start_time} - ${quest.end_time}</span><br/><small>by ${quest.creator_name || "Unknown"}</small><br/><small>👥 ${participantCount} joined</small></div>`;
+          })()
+        : `<div style="color:#000; max-height:200px; overflow-y:auto; min-width:180px;">
+            <strong style="font-size:14px; display:block; margin-bottom:6px;">${groupQuests.length} Quests</strong>
+            ${groupQuests.map((q) => `
+              <div style="padding:4px 0; border-bottom:1px solid #eee; cursor:pointer;" data-quest-id="${q.id}">
+                <strong>${q.title}</strong>
+                <div style="font-size:12px; color:#666;">${q.category} · ${q.quest_date}</div>
+                <div style="font-size:12px; color:#666;">${q.start_time} – ${q.end_time}</div>
+                <div style="font-size:11px; color:#999;">by ${q.creator_name || "Unknown"} · 👥 ${q.participants?.length || 0}</div>
+              </div>
+            `).join("")}
+          </div>`;
 
+      const infoWindow = new google.maps.InfoWindow({ content });
       marker.addListener("click", () => infoWindow.open(map, marker));
-      markerQuestMap.set(marker, quest);
-      return marker;
+      markerQuestMap.set(marker, groupQuests);
+      markers.push(marker);
     });
 
     markersRef.current = markers;
@@ -125,8 +138,7 @@ const SideQuest = () => {
 
           const clusterMarkers = cluster.markers || [];
           const questItems = clusterMarkers
-            .map((m: any) => markerQuestMap.get(m))
-            .filter(Boolean) as Quest[];
+            .flatMap((m: any) => markerQuestMap.get(m) || []);
 
           const content = `<div style="color:#000; max-height:200px; overflow-y:auto; min-width:180px;">
             <strong style="font-size:14px; display:block; margin-bottom:6px;">${questItems.length} Quests</strong>

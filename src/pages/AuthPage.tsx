@@ -45,7 +45,7 @@ const AuthPage = () => {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm animate-fade-in">
         <div className="flex justify-center mb-10">
-          <img src={ntuCirclesLogo} alt="NTU Circles" className="h-28 w-auto" />
+          <img src={ntuCirclesLogo} alt="NTU Circles" className="h-28 w-auto mix-blend-multiply dark:mix-blend-screen" />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

@@ -61,6 +61,10 @@ const SideQuest = () => {
   const [endTime, setEndTime] = useState("");
   const [details, setDetails] = useState("");
   const [location, setLocation] = useState("");
+  const [locationSuggestions, setLocationSuggestions] = useState<{ description: string; place_id: string }[]>([]);
+  const [showLocationDropdown, setShowLocationDropdown] = useState(false);
+  const autocompleteServiceRef = useRef<any>(null);
+  const locationInputRef = useRef<HTMLDivElement>(null);
 
   // Chat state
   interface ChatMessage {
@@ -484,6 +488,37 @@ const SideQuest = () => {
     setEndTime("");
     setDetails("");
     setLocation("");
+  };
+
+  const handleLocationInput = (value: string) => {
+    setLocation(value);
+    const google = (window as any).google;
+    if (!google || !value.trim()) {
+      setLocationSuggestions([]);
+      setShowLocationDropdown(false);
+      return;
+    }
+    if (!autocompleteServiceRef.current) {
+      autocompleteServiceRef.current = new google.maps.places.AutocompleteService();
+    }
+    autocompleteServiceRef.current.getPlacePredictions(
+      { input: value, componentRestrictions: { country: "sg" } },
+      (predictions: any[] | null) => {
+        if (predictions) {
+          setLocationSuggestions(predictions.map((p: any) => ({ description: p.description, place_id: p.place_id })));
+          setShowLocationDropdown(true);
+        } else {
+          setLocationSuggestions([]);
+          setShowLocationDropdown(false);
+        }
+      }
+    );
+  };
+
+  const handleSelectLocation = (description: string) => {
+    setLocation(description);
+    setLocationSuggestions([]);
+    setShowLocationDropdown(false);
   };
 
   // Chat: load messages + subscribe to realtime when a quest is selected
@@ -1013,14 +1048,31 @@ const SideQuest = () => {
 
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-foreground">Location: <span className="text-destructive">*</span></label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <div className="relative" ref={locationInputRef}>
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
                   <Input
                     placeholder="e.g. NTU, Jurong East, Marina Bay"
                     value={location}
-                    onChange={(e) => setLocation(e.target.value)}
+                    onChange={(e) => handleLocationInput(e.target.value)}
+                    onFocus={() => { if (locationSuggestions.length) setShowLocationDropdown(true); }}
+                    onBlur={() => { setTimeout(() => setShowLocationDropdown(false), 200); }}
                     className="pl-9"
                   />
+                  {showLocationDropdown && locationSuggestions.length > 0 && (
+                    <div className="absolute left-0 right-0 top-full mt-1 z-50 max-h-48 overflow-y-auto rounded-md border border-border bg-popover shadow-md">
+                      {locationSuggestions.map((s) => (
+                        <button
+                          key={s.place_id}
+                          type="button"
+                          className="w-full px-3 py-2 text-left text-sm text-foreground hover:bg-accent transition-colors"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => handleSelectLocation(s.description)}
+                        >
+                          {s.description}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 

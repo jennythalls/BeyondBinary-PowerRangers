@@ -74,9 +74,21 @@ const SideQuest = () => {
 
     const markerQuestMap = new Map<any, Quest>();
 
-    const markers = questList.map((quest) => {
+    // Offset markers at the same location so they don't stack
+    const locationCounts = new Map<string, number>();
+    const offsetQuests = questList.map((quest) => {
+      const key = `${quest.lat},${quest.lng}`;
+      const count = locationCounts.get(key) || 0;
+      locationCounts.set(key, count + 1);
+      const angle = (count * 2 * Math.PI) / Math.max(1, count + 1);
+      const offsetLat = count > 0 ? quest.lat + 0.0002 * Math.cos(angle) : quest.lat;
+      const offsetLng = count > 0 ? quest.lng + 0.0002 * Math.sin(angle) : quest.lng;
+      return { ...quest, offsetLat, offsetLng };
+    });
+
+    const markers = offsetQuests.map((quest) => {
       const marker = new google.maps.Marker({
-        position: { lat: quest.lat, lng: quest.lng },
+        position: { lat: quest.offsetLat, lng: quest.offsetLng },
         title: quest.title,
       });
 

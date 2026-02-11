@@ -239,10 +239,7 @@ const SideQuest = () => {
 
     if (fetchError || !data) return;
 
-    const activeQuests = data.filter((q: any) => {
-      const endDateTime = new Date(`${q.quest_date}T${q.end_time}`);
-      return endDateTime > now;
-    });
+    const activeQuests = data;
 
     const questIds = activeQuests.map((q: any) => q.id);
     const userIds = [...new Set(activeQuests.map((q: any) => q.user_id))];

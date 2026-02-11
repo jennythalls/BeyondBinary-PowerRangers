@@ -593,6 +593,8 @@ const SideQuest = () => {
       });
       setMessageReads(readsMap);
     }
+  }, []);
+
   // Mark all messages in a quest as read by current user
   const markMessagesAsRead = useCallback(async (questId: string) => {
     if (!user) return;

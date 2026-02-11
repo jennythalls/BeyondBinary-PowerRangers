@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowLeft, Wind, BriefcaseBusiness, Moon, Loader2, Save } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -40,6 +41,7 @@ const Reflections = () => {
   const [submitted, setSubmitted] = useState(false);
   const [savedReflections, setSavedReflections] = useState<SavedReflection[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [filterMonth, setFilterMonth] = useState<string>("all");
 
   const fetchHistory = async (category: string) => {
     if (!user) return;
@@ -188,9 +190,31 @@ const Reflections = () => {
 
             {/* Right: saved reflections */}
             <div className="hidden w-80 shrink-0 flex-col md:flex">
-              <h2 className="mb-3 font-display text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                Saved Reflections
-              </h2>
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <h2 className="font-display text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                  Saved Reflections
+                </h2>
+                <Select value={filterMonth} onValueChange={setFilterMonth}>
+                  <SelectTrigger className="h-8 w-[130px] text-xs">
+                    <SelectValue placeholder="Filter month" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All months</SelectItem>
+                    {Array.from(
+                      new Set(
+                        savedReflections.map((r) => format(new Date(r.created_at), "yyyy-MM"))
+                      )
+                    )
+                      .sort()
+                      .reverse()
+                      .map((ym) => (
+                        <SelectItem key={ym} value={ym}>
+                          {format(new Date(ym + "-01"), "MMM yyyy")}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
               {loadingHistory ? (
                 <div className="flex justify-center py-8">
                   <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -200,15 +224,21 @@ const Reflections = () => {
               ) : (
                 <ScrollArea className="h-[calc(100vh-200px)]">
                   <div className="flex flex-col gap-3 pr-3">
-                    {savedReflections.map((r) => (
-                      <div key={r.id} className="rounded-xl border border-border p-4">
-                        <p className="text-xs font-medium text-muted-foreground">
-                          {format(new Date(r.created_at), "MMM d, yyyy")}
-                        </p>
-                        <p className="mt-1 text-sm font-medium text-foreground">{r.question}</p>
-                        <p className="mt-2 text-sm text-muted-foreground">{r.response}</p>
-                      </div>
-                    ))}
+                    {savedReflections
+                      .filter((r) =>
+                        filterMonth === "all"
+                          ? true
+                          : format(new Date(r.created_at), "yyyy-MM") === filterMonth
+                      )
+                      .map((r) => (
+                        <div key={r.id} className="rounded-xl border border-border p-4">
+                          <p className="text-xs font-medium text-muted-foreground">
+                            {format(new Date(r.created_at), "MMM d, yyyy")}
+                          </p>
+                          <p className="mt-1 text-sm font-medium text-foreground">{r.question}</p>
+                          <p className="mt-2 text-sm text-muted-foreground">{r.response}</p>
+                        </div>
+                      ))}
                   </div>
                 </ScrollArea>
               )}

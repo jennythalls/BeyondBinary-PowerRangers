@@ -118,6 +118,15 @@ const SideQuest = () => {
         .then(() => loadQuestsRef.current?.());
     };
 
+    const genderBreakdownHtml = (participants: Participant[] | undefined) => {
+      const male = participants?.filter(p => p.gender === "male").length || 0;
+      const female = participants?.filter(p => p.gender === "female").length || 0;
+      const other = (participants?.length || 0) - male - female;
+      return `<div style="font-size:10px; margin-top:2px;">
+        <span style="color:#3b82f6;">♂ ${male}</span> · <span style="color:#f472b6;">♀ ${female}</span> · <span style="color:#9ca3af;">○ ${other}</span>
+      </div>`;
+    };
+
     const questCardHtml = (q: Quest) => {
       const isJoined = q.participants?.some(p => p.user_id === currentUserId);
       const isOwner = q.user_id === currentUserId;
@@ -132,6 +141,7 @@ const SideQuest = () => {
         <div style="font-size:12px; color:#666;">${q.category} · ${q.quest_date}</div>
         <div style="font-size:12px; color:#666;">${q.start_time} – ${q.end_time}</div>
         <div style="font-size:11px; color:#999;">by ${q.creator_name || "Unknown"} · 👥 ${q.participants?.length || 0}</div>
+        ${genderBreakdownHtml(q.participants)}
         ${btnHtml}
       </div>`;
     };
@@ -756,6 +766,13 @@ const SideQuest = () => {
                       <p className="flex items-center gap-1.5">
                         <Users className="h-3.5 w-3.5" />
                         {quest.participants?.length || 0} joined
+                        <span className="ml-1 text-xs">
+                          <span className="text-blue-500">♂{quest.participants?.filter(p => p.gender === "male").length || 0}</span>
+                          {" "}
+                          <span className="text-pink-400">♀{quest.participants?.filter(p => p.gender === "female").length || 0}</span>
+                          {" "}
+                          <span className="text-gray-400">○{(quest.participants?.length || 0) - (quest.participants?.filter(p => p.gender === "male").length || 0) - (quest.participants?.filter(p => p.gender === "female").length || 0)}</span>
+                        </span>
                       </p>
                     </div>
                     {quest.details && (

@@ -401,6 +401,7 @@ const SideQuest = () => {
         mapInstanceRef.current = new (window as any).google.maps.Map(mapRef.current, {
           center: { lat: 1.3521, lng: 103.8198 },
           zoom: 12,
+          streetViewControl: false,
         });
         loadQuests();
       }

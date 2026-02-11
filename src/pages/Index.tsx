@@ -4,13 +4,15 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LogOut, Users, Heart, UserCircle, Pencil, Lock, Compass, Sunrise } from "lucide-react";
+import { LogOut, Users, Heart, UserCircle, Pencil, Lock, Compass, Sunrise, Moon, Sun } from "lucide-react";
+import { useTheme } from "@/contexts/ThemeContext";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const Index = () => {
+  const { theme, toggleTheme } = useTheme();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [usernameOpen, setUsernameOpen] = useState(false);
@@ -107,6 +109,10 @@ const Index = () => {
             <DropdownMenuItem onClick={() => setPasswordOpen(true)} className="cursor-pointer">
               <Lock className="mr-2 h-4 w-4" />
               Change Password
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={toggleTheme} className="cursor-pointer">
+              {theme === "dark" ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
+              {theme === "dark" ? "Light Mode" : "Dark Mode"}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={signOut} className="text-destructive cursor-pointer">

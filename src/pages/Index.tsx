@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut, User, Heart, UserCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { LogOut, User, Heart, UserCircle, Pencil, Lock } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,10 +13,68 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const Index = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+
+  const [usernameOpen, setUsernameOpen] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
+  const [newDisplayName, setNewDisplayName] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const handleChangeUsername = async () => {
+    if (!newDisplayName.trim()) {
+      toast.error("Display name cannot be empty.");
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ display_name: newDisplayName.trim() })
+      .eq("user_id", user?.id);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Display name updated!");
+      setUsernameOpen(false);
+      setNewDisplayName("");
+    }
+    setSaving(false);
+  };
+
+  const handleChangePassword = async () => {
+    if (newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("Passwords do not match.");
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Password updated!");
+      setPasswordOpen(false);
+      setNewPassword("");
+      setConfirmPassword("");
+    }
+    setSaving(false);
+  };
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -32,6 +93,15 @@ const Index = () => {
             <div className="px-2 py-1.5 text-sm text-muted-foreground">
               {user?.email}
             </div>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setUsernameOpen(true)} className="cursor-pointer">
+              <Pencil className="mr-2 h-4 w-4" />
+              Change Username
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setPasswordOpen(true)} className="cursor-pointer">
+              <Lock className="mr-2 h-4 w-4" />
+              Change Password
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={signOut} className="text-destructive cursor-pointer">
               <LogOut className="mr-2 h-4 w-4" />
@@ -63,6 +133,68 @@ const Index = () => {
           </div>
         </div>
       </div>
+
+      {/* Change Username Dialog */}
+      <Dialog open={usernameOpen} onOpenChange={setUsernameOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change Display Name</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="newDisplayName">New Display Name</Label>
+            <Input
+              id="newDisplayName"
+              value={newDisplayName}
+              onChange={(e) => setNewDisplayName(e.target.value)}
+              placeholder="Enter new display name"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setUsernameOpen(false)}>Cancel</Button>
+            <Button onClick={handleChangeUsername} disabled={saving}>
+              {saving ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Password Dialog */}
+      <Dialog open={passwordOpen} onOpenChange={setPasswordOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change Password</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="newPassword">New Password</Label>
+              <Input
+                id="newPassword"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="••••••••"
+                minLength={6}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPasswordOpen(false)}>Cancel</Button>
+            <Button onClick={handleChangePassword} disabled={saving}>
+              {saving ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

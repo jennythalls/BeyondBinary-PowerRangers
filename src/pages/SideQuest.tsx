@@ -167,6 +167,14 @@ const SideQuest = () => {
       const marker = new google.maps.Marker({
         position: { lat, lng },
         title: groupQuests.length === 1 ? groupQuests[0].title : `${groupQuests.length} Quests`,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          fillColor: "#7DD3FC",
+          fillOpacity: 1,
+          strokeColor: "#0EA5E9",
+          strokeWeight: 2,
+          scale: 10,
+        },
       });
 
       const content = groupQuests.length === 1

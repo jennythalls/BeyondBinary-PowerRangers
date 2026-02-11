@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ArrowLeft, List, Plus, X, MapPin, CalendarIcon, Square, Users, LogIn, LogOut, Send, MessageCircle, ChevronUp, ChevronDown, Filter } from "lucide-react";
+import { ArrowLeft, List, Plus, X, MapPin, CalendarIcon, Square, Users, LogIn, LogOut, Send, MessageCircle, ChevronUp, ChevronDown, Filter, Check, CheckCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
@@ -83,6 +83,10 @@ const SideQuest = () => {
   const [showChat, setShowChat] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatChannelRef = useRef<any>(null);
+  const readChannelRef = useRef<any>(null);
+
+  // Read receipts: map of message_id -> set of user_ids who read it
+  const [messageReads, setMessageReads] = useState<Record<string, Set<string>>>({});
 
   const clustererRef = useRef<any>(null);
   const clusterInfoWindowRef = useRef<any>(null);
@@ -574,23 +578,59 @@ const SideQuest = () => {
       ...m,
       display_name: nameMap.get(m.user_id) || "Unknown",
     })));
-  }, []);
+
+    // Load read receipts for all messages
+    const messageIds = (messages as any[]).map((m: any) => m.id);
+    if (messageIds.length > 0) {
+      const { data: reads } = await supabase
+        .from("quest_message_reads" as any)
+        .select("message_id, user_id")
+        .in("message_id", messageIds);
+      const readsMap: Record<string, Set<string>> = {};
+      (reads || []).forEach((r: any) => {
+        if (!readsMap[r.message_id]) readsMap[r.message_id] = new Set();
+        readsMap[r.message_id].add(r.user_id);
+      });
+      setMessageReads(readsMap);
+    }
+  // Mark all messages in a quest as read by current user
+  const markMessagesAsRead = useCallback(async (questId: string) => {
+    if (!user) return;
+    const { data: messages } = await supabase
+      .from("quest_messages" as any)
+      .select("id")
+      .eq("quest_id", questId);
+    if (!messages || messages.length === 0) return;
+
+    // Upsert read receipts for all messages not yet read
+    const rows = (messages as any[]).map((m: any) => ({
+      message_id: m.id,
+      user_id: user.id,
+    }));
+    await supabase.from("quest_message_reads" as any).upsert(rows as any, { onConflict: "message_id,user_id" });
+  }, [user]);
 
   useEffect(() => {
     if (!chatQuestId) {
       setChatMessages([]);
       setChatInput("");
+      setMessageReads({});
       if (chatChannelRef.current) {
         supabase.removeChannel(chatChannelRef.current);
         chatChannelRef.current = null;
+      }
+      if (readChannelRef.current) {
+        supabase.removeChannel(readChannelRef.current);
+        readChannelRef.current = null;
       }
       return;
     }
 
     loadChatMessages(chatQuestId);
     markQuestAsRead(chatQuestId);
+    markMessagesAsRead(chatQuestId);
 
-    // Subscribe to realtime
+    // Subscribe to new messages
     const channel = supabase
       .channel(`quest-chat-${chatQuestId}`)
       .on(
@@ -613,17 +653,52 @@ const SideQuest = () => {
             ...msg,
             display_name: profile?.display_name || "Unknown",
           }]);
+
+          // Mark new message as read immediately
+          if (user && msg.user_id !== user.id) {
+            await supabase.from("quest_message_reads" as any).upsert({
+              message_id: msg.id,
+              user_id: user.id,
+            } as any, { onConflict: "message_id,user_id" });
+          }
         }
       )
       .subscribe();
 
     chatChannelRef.current = channel;
 
+    // Subscribe to read receipts realtime
+    const readChannel = supabase
+      .channel(`quest-reads-${chatQuestId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'quest_message_reads',
+        },
+        (payload: any) => {
+          const read = payload.new;
+          setMessageReads((prev) => {
+            const updated = { ...prev };
+            if (!updated[read.message_id]) updated[read.message_id] = new Set();
+            else updated[read.message_id] = new Set(updated[read.message_id]);
+            updated[read.message_id].add(read.user_id);
+            return updated;
+          });
+        }
+      )
+      .subscribe();
+
+    readChannelRef.current = readChannel;
+
     return () => {
       supabase.removeChannel(channel);
       chatChannelRef.current = null;
+      supabase.removeChannel(readChannel);
+      readChannelRef.current = null;
     };
-  }, [chatQuestId, loadChatMessages, markQuestAsRead]);
+  }, [chatQuestId, loadChatMessages, markQuestAsRead, markMessagesAsRead, user]);
 
   // Fetch unread counts when My Quests panel opens
   useEffect(() => {
@@ -642,11 +717,18 @@ const SideQuest = () => {
     if (!chatInput.trim() || !user || !chatQuestId) return;
     const msg = chatInput.trim();
     setChatInput("");
-    await supabase.from("quest_messages" as any).insert({
+    const { data } = await supabase.from("quest_messages" as any).insert({
       quest_id: chatQuestId,
       user_id: user.id,
       message: msg,
-    } as any);
+    } as any).select("id").single();
+    // Auto-mark own message as read
+    if (data) {
+      await supabase.from("quest_message_reads" as any).upsert({
+        message_id: (data as any).id,
+        user_id: user.id,
+      } as any, { onConflict: "message_id,user_id" });
+    }
   };
 
   const myQuests = quests.filter((q) => q.user_id === user?.id || q.participants?.some(p => p.user_id === user?.id));
@@ -914,9 +996,18 @@ const SideQuest = () => {
                       <p className="font-semibold text-[10px] opacity-70 mb-0.5">{msg.display_name}</p>
                     )}
                     <p>{msg.message}</p>
-                    <p className="text-[9px] opacity-50 mt-0.5 text-right">
-                      {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </p>
+                    <div className="flex items-center justify-end gap-1 mt-0.5">
+                      <span className="text-[9px] opacity-50">
+                        {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      {msg.user_id === user?.id && (() => {
+                        const readers = messageReads[msg.id];
+                        const othersRead = readers && [...readers].some(uid => uid !== user?.id);
+                        return othersRead
+                          ? <CheckCheck className="h-3 w-3 opacity-80 text-blue-300" />
+                          : <Check className="h-3 w-3 opacity-50" />;
+                      })()}
+                    </div>
                   </div>
                 ))
               )}

@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ArrowLeft, List, Plus, X, MapPin, CalendarIcon, Square, Users, LogIn, LogOut, Send, MessageCircle, ChevronUp, ChevronDown, Filter, Check, CheckCheck } from "lucide-react";
+import { ArrowLeft, List, Plus, X, MapPin, CalendarIcon, Square, Users, LogIn, LogOut, Send, MessageCircle, ChevronUp, ChevronDown, Filter, Check, CheckCheck, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
@@ -67,6 +67,20 @@ const SideQuest = () => {
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const mapsApiKeyRef = useRef<string | null>(null);
   const locationInputRef = useRef<HTMLDivElement>(null);
+
+  // Edit quest state
+  const [showEdit, setShowEdit] = useState(false);
+  const [editQuestId, setEditQuestId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editCategory, setEditCategory] = useState("");
+  const [editQuestDate, setEditQuestDate] = useState<Date>();
+  const [editStartTime, setEditStartTime] = useState("");
+  const [editEndTime, setEditEndTime] = useState("");
+  const [editDetails, setEditDetails] = useState("");
+  const [editLocation, setEditLocation] = useState("");
+  const [editLocationSuggestions, setEditLocationSuggestions] = useState<{ description: string; place_id: string }[]>([]);
+  const [showEditLocationDropdown, setShowEditLocationDropdown] = useState(false);
+  const editLocationInputRef = useRef<HTMLDivElement>(null);
 
   // Chat state
   interface ChatMessage {
@@ -506,6 +520,96 @@ const SideQuest = () => {
     setEndTime("");
     setDetails("");
     setLocation("");
+  };
+
+  const openEditQuest = (quest: Quest) => {
+    setEditQuestId(quest.id);
+    setEditTitle(quest.title);
+    setEditCategory(quest.category);
+    setEditQuestDate(new Date(quest.quest_date + "T00:00:00"));
+    setEditStartTime(quest.start_time);
+    setEditEndTime(quest.end_time);
+    setEditDetails(quest.details || "");
+    setEditLocation(quest.location);
+    setEditLocationSuggestions([]);
+    setShowEditLocationDropdown(false);
+    setShowEdit(true);
+  };
+
+  const handleEditLocationInput = async (value: string) => {
+    setEditLocation(value);
+    if (!value.trim()) {
+      setEditLocationSuggestions([]);
+      setShowEditLocationDropdown(false);
+      return;
+    }
+    if (!mapsApiKeyRef.current) {
+      const { data } = await supabase.functions.invoke("get-maps-key");
+      if (data?.apiKey) mapsApiKeyRef.current = data.apiKey;
+      else return;
+    }
+    try {
+      const res = await fetch(`https://places.googleapis.com/v1/places:autocomplete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Goog-Api-Key": mapsApiKeyRef.current },
+        body: JSON.stringify({ input: value, includedRegionCodes: ["sg"] }),
+      });
+      const json = await res.json();
+      const suggestions = (json.suggestions || [])
+        .filter((s: any) => s.placePrediction)
+        .map((s: any) => ({
+          description: s.placePrediction.text?.text || s.placePrediction.structuredFormat?.mainText?.text || "",
+          place_id: s.placePrediction.placeId,
+        }));
+      setEditLocationSuggestions(suggestions);
+      setShowEditLocationDropdown(suggestions.length > 0);
+    } catch {
+      setEditLocationSuggestions([]);
+      setShowEditLocationDropdown(false);
+    }
+  };
+
+  const handleEditQuest = async () => {
+    const missing: string[] = [];
+    if (!editTitle) missing.push("Title");
+    if (!editCategory) missing.push("Category");
+    if (!editQuestDate) missing.push("Date");
+    if (!editStartTime) missing.push("Start Time");
+    if (!editEndTime) missing.push("End Time");
+    if (!editLocation) missing.push("Location");
+    if (missing.length > 0) {
+      toast({ title: "Please fill in the required fields", description: missing.join(", "), variant: "destructive" });
+      return;
+    }
+    if (!user || !editQuestId) return;
+
+    const google = (window as any).google;
+    if (!google) return;
+
+    const geocoder = new google.maps.Geocoder();
+    geocoder.geocode({ address: editLocation }, async (results: any, status: string) => {
+      if (status === "OK" && results[0]) {
+        const { lat, lng } = results[0].geometry.location;
+        const { error: updateError } = await supabase.from("quests").update({
+          title: editTitle,
+          category: editCategory,
+          quest_date: format(editQuestDate!, "yyyy-MM-dd"),
+          start_time: editStartTime,
+          end_time: editEndTime,
+          details: editDetails || null,
+          location: editLocation,
+          lat: lat(),
+          lng: lng(),
+        }).eq("id", editQuestId);
+
+        if (!updateError) {
+          setShowEdit(false);
+          setEditQuestId(null);
+          await loadQuests();
+          toast({ title: "Quest updated!" });
+        }
+      }
+    });
   };
 
   const handleLocationInput = async (value: string) => {
@@ -968,9 +1072,14 @@ const SideQuest = () => {
                 </div>
                 <div className="pt-2 flex gap-2">
                   {isCreator(chatQuest) ? (
-                    <Button variant="destructive" size="sm" className="w-full gap-1 text-xs h-7" onClick={() => handleEndQuest(chatQuest.id)}>
-                      <Square className="h-3 w-3" /> End Quest
-                    </Button>
+                    <>
+                      <Button variant="outline" size="sm" className="flex-1 gap-1 text-xs h-7" onClick={() => { openEditQuest(chatQuest); }}>
+                        <Pencil className="h-3 w-3" /> Edit
+                      </Button>
+                      <Button variant="destructive" size="sm" className="flex-1 gap-1 text-xs h-7" onClick={() => handleEndQuest(chatQuest.id)}>
+                        <Square className="h-3 w-3" /> End Quest
+                      </Button>
+                    </>
                   ) : (
                     <Button variant="outline" size="sm" className="w-full gap-1 text-xs h-7" onClick={() => handleLeaveQuest(chatQuest.id)}>
                       <LogOut className="h-3 w-3" /> Leave Quest
@@ -1056,15 +1165,26 @@ const SideQuest = () => {
                 <p className="text-xs text-muted-foreground capitalize">{quest.category}</p>
               </div>
               {mode === 'created' ? (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="shrink-0 gap-1.5"
-                  onClick={(e) => { e.stopPropagation(); handleEndQuest(quest.id); }}
-                >
-                  <Square className="h-3 w-3" />
-                  End
-                </Button>
+                <div className="flex gap-1.5 shrink-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={(e) => { e.stopPropagation(); openEditQuest(quest); }}
+                  >
+                    <Pencil className="h-3 w-3" />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={(e) => { e.stopPropagation(); handleEndQuest(quest.id); }}
+                  >
+                    <Square className="h-3 w-3" />
+                    End
+                  </Button>
+                </div>
               ) : (
                 <Button
                   variant="outline"
@@ -1243,6 +1363,118 @@ const SideQuest = () => {
 
               <Button className="w-full" onClick={handleCreate}>
                 Create
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Quest Modal */}
+      {showEdit && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 px-4">
+          <div className="w-full max-w-md rounded-xl border-2 border-border bg-background p-6 shadow-lg max-h-[90vh] overflow-y-auto">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="font-display text-xl font-semibold text-foreground">Edit Quest</h2>
+              <Button variant="ghost" size="icon" onClick={() => setShowEdit(false)}>
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+
+            <div className="space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">Title: <span className="text-destructive">*</span></label>
+                <Input placeholder="Enter quest title" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">Category: <span className="text-destructive">*</span></label>
+                <Select value={editCategory} onValueChange={setEditCategory}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent className="z-[70] bg-popover">
+                    <SelectItem value="food">Food</SelectItem>
+                    <SelectItem value="study">Study</SelectItem>
+                    <SelectItem value="fitness">Fitness</SelectItem>
+                    <SelectItem value="errands">Errands</SelectItem>
+                    <SelectItem value="others">Others</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">Location: <span className="text-destructive">*</span></label>
+                <div className="relative" ref={editLocationInputRef}>
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
+                  <Input
+                    placeholder="e.g. NTU, Jurong East, Marina Bay"
+                    value={editLocation}
+                    onChange={(e) => handleEditLocationInput(e.target.value)}
+                    onFocus={() => { if (editLocationSuggestions.length) setShowEditLocationDropdown(true); }}
+                    onBlur={() => { setTimeout(() => setShowEditLocationDropdown(false), 200); }}
+                    className="pl-9"
+                  />
+                  {showEditLocationDropdown && editLocationSuggestions.length > 0 && (
+                    <div className="absolute left-0 right-0 top-full mt-1 z-[80] max-h-48 overflow-y-auto rounded-md border border-border bg-popover shadow-md">
+                      {editLocationSuggestions.map((s) => (
+                        <button
+                          key={s.place_id}
+                          type="button"
+                          className="w-full px-3 py-2 text-left text-sm text-foreground hover:bg-accent transition-colors"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => { setEditLocation(s.description); setEditLocationSuggestions([]); setShowEditLocationDropdown(false); }}
+                        >
+                          {s.description}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">Date: <span className="text-destructive">*</span></label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn("w-full justify-start text-left font-normal", !editQuestDate && "text-muted-foreground")}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {editQuestDate ? format(editQuestDate, "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 z-[70]" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={editQuestDate}
+                      onSelect={setEditQuestDate}
+                      disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-foreground">Start Time: <span className="text-destructive">*</span></label>
+                  <Input type="time" value={editStartTime} onChange={(e) => setEditStartTime(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-foreground">End Time: <span className="text-destructive">*</span></label>
+                  <Input type="time" value={editEndTime} onChange={(e) => setEditEndTime(e.target.value)} />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">Details: <span className="text-xs text-muted-foreground">(optional)</span></label>
+                <Textarea placeholder="Describe your quest..." rows={4} value={editDetails} onChange={(e) => setEditDetails(e.target.value)} />
+              </div>
+
+              <Button className="w-full" onClick={handleEditQuest}>
+                Save Changes
               </Button>
             </div>
           </div>

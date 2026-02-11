@@ -3,7 +3,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import ntuCirclesLogo from "@/assets/ntu-circles-logo.png";
+import ntuCirclesLight from "@/assets/ntu-circles-light.png";
+import ntuCirclesDark from "@/assets/ntu-circles-dark.png";
+import { useTheme } from "@/contexts/ThemeContext";
 import { toast } from "sonner";
 
 const AuthPage = () => {
@@ -14,6 +16,7 @@ const AuthPage = () => {
   const [birthday, setBirthday] = useState("");
   const [gender, setGender] = useState("");
   const [loading, setLoading] = useState(false);
+  const { theme } = useTheme();
   const { signIn, signUp } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -45,7 +48,7 @@ const AuthPage = () => {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm animate-fade-in">
         <div className="flex justify-center mb-10">
-          <img src={ntuCirclesLogo} alt="NTU Circles" className="h-28 w-auto mix-blend-multiply dark:mix-blend-screen" />
+          <img src={theme === "dark" ? ntuCirclesDark : ntuCirclesLight} alt="NTU Circles" className="h-28 w-auto" />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

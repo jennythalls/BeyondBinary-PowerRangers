@@ -1,10 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Heart } from "lucide-react";
-
-const resources = [
-  { label: "Mental health support", icon: Heart },
-];
+import { ArrowLeft } from "lucide-react";
 
 const SelfHelpResources = () => {
   const navigate = useNavigate();
@@ -18,17 +14,7 @@ const SelfHelpResources = () => {
         <h1 className="ml-2 font-display text-xl font-semibold text-foreground">Self-Help Resources</h1>
       </header>
 
-      <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4">
-        {resources.map(({ label, icon: Icon }) => (
-          <button
-            key={label}
-            className="flex w-72 items-center gap-4 rounded-xl border-2 border-border p-6 transition-colors hover:border-primary"
-          >
-            <Icon className="h-10 w-10 shrink-0 text-primary" />
-            <span className="font-display text-lg font-semibold text-foreground text-left">{label}</span>
-          </button>
-        ))}
-      </div>
+        <p className="text-muted-foreground">Coming soon</p>
     </div>
   );
 };

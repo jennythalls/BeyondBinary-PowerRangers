@@ -38,7 +38,7 @@ const quotes = [
 
 const MotivationQuotes = () => {
   const navigate = useNavigate();
-  const [current, setCurrent] = useState(0);
+  const [current, setCurrent] = useState(() => Math.floor(Math.random() * quotes.length));
 
   const prev = () => setCurrent((c) => (c === 0 ? quotes.length - 1 : c - 1));
   const next = () => setCurrent((c) => (c === quotes.length - 1 ? 0 : c + 1));
@@ -50,9 +50,6 @@ const MotivationQuotes = () => {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <h1 className="ml-2 font-display text-xl font-semibold text-foreground">Motivation Quotes</h1>
-        <span className="ml-auto text-sm text-muted-foreground">
-          {current + 1} / {quotes.length}
-        </span>
       </header>
 
       <div className="flex flex-1 flex-col items-center justify-center px-4">

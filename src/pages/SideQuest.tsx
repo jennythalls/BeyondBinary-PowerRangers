@@ -65,6 +65,7 @@ const SideQuest = () => {
   }
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
+  const [chatQuestId, setChatQuestId] = useState<string | null>(null);
   const [showChat, setShowChat] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatChannelRef = useRef<any>(null);
@@ -327,6 +328,7 @@ const SideQuest = () => {
       quest_id: questId,
       user_id: user.id,
     } as any);
+    setChatQuestId(questId);
     await loadQuests();
   };
 
@@ -337,6 +339,7 @@ const SideQuest = () => {
       .delete()
       .eq("quest_id", questId)
       .eq("user_id", user.id);
+    if (chatQuestId === questId) setChatQuestId(null);
     await loadQuests();
   };
 
@@ -425,9 +428,8 @@ const SideQuest = () => {
   }, []);
 
   useEffect(() => {
-    if (!selectedQuest) {
+    if (!chatQuestId) {
       setChatMessages([]);
-      setShowChat(false);
       setChatInput("");
       if (chatChannelRef.current) {
         supabase.removeChannel(chatChannelRef.current);
@@ -436,18 +438,18 @@ const SideQuest = () => {
       return;
     }
 
-    loadChatMessages(selectedQuest.id);
+    loadChatMessages(chatQuestId);
 
     // Subscribe to realtime
     const channel = supabase
-      .channel(`quest-chat-${selectedQuest.id}`)
+      .channel(`quest-chat-${chatQuestId}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'quest_messages',
-          filter: `quest_id=eq.${selectedQuest.id}`,
+          filter: `quest_id=eq.${chatQuestId}`,
         },
         async (payload: any) => {
           const msg = payload.new;
@@ -471,7 +473,7 @@ const SideQuest = () => {
       supabase.removeChannel(channel);
       chatChannelRef.current = null;
     };
-  }, [selectedQuest?.id, loadChatMessages]);
+  }, [chatQuestId, loadChatMessages]);
 
   // Scroll chat to bottom when messages change
   useEffect(() => {
@@ -479,11 +481,11 @@ const SideQuest = () => {
   }, [chatMessages]);
 
   const handleSendMessage = async () => {
-    if (!chatInput.trim() || !user || !selectedQuest) return;
+    if (!chatInput.trim() || !user || !chatQuestId) return;
     const msg = chatInput.trim();
     setChatInput("");
     await supabase.from("quest_messages" as any).insert({
-      quest_id: selectedQuest.id,
+      quest_id: chatQuestId,
       user_id: user.id,
       message: msg,
     } as any);
@@ -589,56 +591,60 @@ const SideQuest = () => {
       )}
 
       {/* Right-side Chat Panel */}
-      {selectedQuest && isMember(selectedQuest) && (
-        <div className="fixed top-0 right-0 z-40 h-full w-80 border-l border-border bg-background shadow-lg flex flex-col">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-            <div className="flex items-center gap-2">
-              <MessageCircle className="h-4 w-4 text-primary" />
-              <span className="font-semibold text-sm text-foreground truncate">{selectedQuest.title}</span>
+      {chatQuestId && (() => {
+        const chatQuest = quests.find(q => q.id === chatQuestId);
+        if (!chatQuest || !isMember(chatQuest)) return null;
+        return (
+          <div className="fixed top-0 right-0 z-40 h-full w-80 border-l border-border bg-background shadow-lg flex flex-col">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+              <div className="flex items-center gap-2">
+                <MessageCircle className="h-4 w-4 text-primary" />
+                <span className="font-semibold text-sm text-foreground truncate">{chatQuest.title}</span>
+              </div>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setChatQuestId(null)}>
+                <X className="h-4 w-4" />
+              </Button>
             </div>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectedQuest(null)}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
 
-          <div className="flex-1 overflow-y-auto p-3 space-y-2">
-            {chatMessages.length === 0 ? (
-              <p className="text-xs text-muted-foreground text-center pt-20">No messages yet. Start the conversation!</p>
-            ) : (
-              chatMessages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={cn(
-                    "max-w-[85%] rounded-lg px-3 py-1.5 text-xs",
-                    msg.user_id === user?.id
-                      ? "ml-auto bg-primary text-primary-foreground"
-                      : "bg-muted text-foreground"
-                  )}
-                >
-                  {msg.user_id !== user?.id && (
-                    <p className="font-semibold text-[10px] opacity-70 mb-0.5">{msg.display_name}</p>
-                  )}
-                  <p>{msg.message}</p>
-                </div>
-              ))
-            )}
-            <div ref={chatEndRef} />
-          </div>
+            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+              {chatMessages.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center pt-20">No messages yet. Start the conversation!</p>
+              ) : (
+                chatMessages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={cn(
+                      "max-w-[85%] rounded-lg px-3 py-1.5 text-xs",
+                      msg.user_id === user?.id
+                        ? "ml-auto bg-primary text-primary-foreground"
+                        : "bg-muted text-foreground"
+                    )}
+                  >
+                    {msg.user_id !== user?.id && (
+                      <p className="font-semibold text-[10px] opacity-70 mb-0.5">{msg.display_name}</p>
+                    )}
+                    <p>{msg.message}</p>
+                  </div>
+                ))
+              )}
+              <div ref={chatEndRef} />
+            </div>
 
-          <div className="border-t border-border p-3 flex gap-2">
-            <Input
-              placeholder="Type a message..."
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-              className="text-xs h-8"
-            />
-            <Button size="sm" className="h-8 px-3" onClick={handleSendMessage} disabled={!chatInput.trim()}>
-              <Send className="h-3.5 w-3.5" />
-            </Button>
+            <div className="border-t border-border p-3 flex gap-2">
+              <Input
+                placeholder="Type a message..."
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                className="text-xs h-8"
+              />
+              <Button size="sm" className="h-8 px-3" onClick={handleSendMessage} disabled={!chatInput.trim()}>
+                <Send className="h-3.5 w-3.5" />
+              </Button>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* My Quests List */}
       {showList && (
@@ -659,7 +665,7 @@ const SideQuest = () => {
                   <div
                     key={quest.id}
                     className="rounded-lg border border-border p-4 space-y-2 cursor-pointer hover:border-primary transition-colors"
-                    onClick={() => { setShowList(false); setSelectedQuest(quest); }}
+                    onClick={() => { setShowList(false); setSelectedQuest(quest); setChatQuestId(quest.id); }}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">

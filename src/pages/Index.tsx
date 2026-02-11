@@ -117,7 +117,7 @@ const Index = () => {
                 <Heart className="h-14 w-14 text-primary fill-primary/30" />
               </div>
               <span className="font-display font-semibold text-lg text-foreground">QuestBreak</span>
-              <span className="text-xs text-muted-foreground text-center">Recharge with quotes, reflections & self-help</span>
+              <span className="text-xs text-muted-foreground text-center">Recharge with quotes, reflections & support</span>
             </button>
           </div>
         </div>

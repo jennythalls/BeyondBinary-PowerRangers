@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import NTULogo from "@/components/NTULogo";
+import ntuCirclesLogo from "@/assets/ntu-circles-logo.png";
 import { toast } from "sonner";
 
 const AuthPage = () => {
@@ -45,7 +45,7 @@ const AuthPage = () => {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm animate-fade-in">
         <div className="flex justify-center mb-10">
-          <NTULogo />
+          <img src={ntuCirclesLogo} alt="NTU Circles" className="h-28 w-auto" />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

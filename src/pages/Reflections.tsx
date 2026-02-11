@@ -1,8 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Wind, BriefcaseBusiness, Moon, Loader2 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { ArrowLeft, Wind, BriefcaseBusiness, Moon, Loader2, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const reflectionItems = [
   { label: "Feeling stressed", icon: Wind, category: "stressed" },
@@ -18,14 +21,21 @@ const fallbackQuestions: Record<string, string> = {
 
 const Reflections = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [question, setQuestion] = useState<string>("");
+  const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(false);
+  const [answer, setAnswer] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   const handleSelect = async (category: string) => {
     setSelectedCategory(category);
     setLoading(true);
     setQuestion("");
+    setAnswer("");
+    setSubmitted(false);
 
     try {
       const { data, error } = await supabase.functions.invoke("daily-reflection", {
@@ -43,6 +53,30 @@ const Reflections = () => {
     }
   };
 
+  const handleSubmit = async () => {
+    if (!answer.trim() || !user || !selectedCategory) return;
+
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.from("reflection_responses").insert({
+        user_id: user.id,
+        category: selectedCategory,
+        question,
+        response: answer.trim(),
+      });
+
+      if (error) throw error;
+
+      toast({ title: "Saved", description: "Your reflection has been recorded." });
+      setSubmitted(true);
+    } catch (e) {
+      console.error("Error saving reflection:", e);
+      toast({ title: "Error", description: "Failed to save your reflection.", variant: "destructive" });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <header className="flex items-center px-6 py-4">
@@ -53,6 +87,8 @@ const Reflections = () => {
             if (selectedCategory) {
               setSelectedCategory(null);
               setQuestion("");
+              setAnswer("");
+              setSubmitted(false);
             } else {
               navigate("/questbook");
             }
@@ -63,7 +99,7 @@ const Reflections = () => {
         <h1 className="ml-2 font-display text-xl font-semibold text-foreground">Reflections</h1>
       </header>
 
-      <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4">
+      <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4 pb-8">
         {!selectedCategory ? (
           reflectionItems.map(({ label, icon: Icon, category }) => (
             <button
@@ -78,8 +114,34 @@ const Reflections = () => {
         ) : loading ? (
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         ) : (
-          <div className="flex w-full max-w-md flex-col items-center justify-center rounded-2xl border-2 border-border p-8 text-center">
-            <p className="text-xl font-semibold leading-relaxed text-foreground">{question}</p>
+          <div className="flex w-full max-w-md flex-col gap-6">
+            <div className="rounded-2xl border-2 border-border p-8 text-center">
+              <p className="text-xl font-semibold leading-relaxed text-foreground">{question}</p>
+            </div>
+
+            <Textarea
+              placeholder="Take a moment to reflect and write your thoughts here..."
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+              disabled={submitted}
+              className="min-h-[140px] resize-none text-base"
+              maxLength={2000}
+            />
+
+            {!submitted ? (
+              <Button onClick={handleSubmit} disabled={submitting || !answer.trim()} className="w-full">
+                {submitting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="mr-2 h-4 w-4" />
+                )}
+                Submit Reflection
+              </Button>
+            ) : (
+              <p className="text-center text-sm text-muted-foreground">
+                ✓ Your reflection has been saved. Take care of yourself 💙
+              </p>
+            )}
           </div>
         )}
       </div>

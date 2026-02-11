@@ -153,6 +153,33 @@ export type Database = {
         }
         Relationships: []
       }
+      reflection_responses: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          question: string
+          response: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          question: string
+          response: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          question?: string
+          response?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -1,4 +1,4 @@
-# 🌿 SafeSpace – NTU Community & Wellness Platform
+# 🌿 NTU Circles – NTU Community & Wellness Platform
 
 ## 🚀 Overview
 

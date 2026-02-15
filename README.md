@@ -2,7 +2,7 @@
 
 ## 🚀 Overview
 
-SafeSpace is a secure, NTU-exclusive digital platform designed to strengthen student connection and mental wellbeing.
+NTU Circles is a secure, NTU-exclusive digital platform designed to strengthen student connection and mental wellbeing.
 
 University students often face social isolation and academic burnout simultaneously. While social platforms exist, they lack safety controls and campus relevance. Mental health tools, on the other hand, are often detached from community interaction.
 
@@ -158,9 +158,11 @@ package.json
 
 # 👥 Team Members
 
-- Member 1  
-- Member 2  
-- Member 3  
+- Darren Ang
+- Hanson Tan
+- Harihar Narayan
+- Harshini YP
+- Wayne Ong
 
 ---
 
